@@ -42,6 +42,9 @@ int main(int argc, char** argv){
 
     CloseWindow();
 
+
+    cartridge_unload(&cartridge);
+
     return 0;
 
 }
