@@ -1,37 +1,36 @@
-#pragma once 
+#pragma once
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
 
 typedef struct cartridge
 {
-    uint8_t* prg_rom;
-    uint8_t* chr_rom;
-
-    uint8_t* save_data;
-
-    bool hasBattery;
-
-
-
+    uint8_t *prg_rom;
     size_t prg_size;
+
+    uint8_t *chr_rom;
     size_t chr_size;
 
+    uint8_t *save_data;
+    char* save_file_path;
+
+    bool has_battery;
+
+    uint8_t mapper_value;
+
+    bool is_vertical;
+
 } Cartridge;
-
-
 
 /**
  * Loads a rom from a file and populates the program rom data and character rom data
  * @param cartridge loads rom contents and fills the struct.
  * @param rom_name filename of rom to load
  */
-bool cartridge_load(Cartridge* cartridge, const char* rom_name);
-   
-
+bool cartridge_load(Cartridge *cartridge, const char *rom_name);
 
 /**
  * Unloads the cartridge and frees the program rom data and character rom data
- * @param cartridge cartridge to be unloaded 
+ * @param cartridge cartridge to be unloaded
  */
-void cartridge_unload(Cartridge* cartridge);
+void cartridge_unload(Cartridge *cartridge);
