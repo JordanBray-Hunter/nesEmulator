@@ -1,5 +1,6 @@
 #include <raylib.h>
 #include "cartridge.h"
+#include "bus.h"
 #include <stdio.h>
 
 int main(int argc, char** argv){
@@ -14,8 +15,10 @@ int main(int argc, char** argv){
     const int scale = 3;
 
     Cartridge cartridge;
+    Bus bus;
 
     cartridge_load(&cartridge, argv[1]);
+    bus_init(&bus,&cartridge);
 
 
     SetTargetFPS(60);
