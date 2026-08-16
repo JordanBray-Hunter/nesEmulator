@@ -1,14 +1,15 @@
 #include "cpu.h"
 
-#define C_BIT 0x01
-#define I_DISABLE_BIT (1 << 2)
-#define Z_BIT (1 << 1)
-#define V_BIT (1 << 6)
-#define N_BIT (1 << 7)
-#define D_BIT (1 << 3)
-#define B_BIT (1 << 4)
-#define U_BIT (1 << 5) 
 
+
+void update_zn_flags(Cpu *cpu, uint8_t value){
+
+    cpu->p &= ~(Z_BIT | N_BIT);
+
+    cpu->p |= (value & N_BIT);
+
+    cpu->p |= (value == 0 ? Z_BIT : 0);
+}
 
 void cpu_init(Cpu *cpu, Bus* bus){
 
@@ -17,8 +18,10 @@ void cpu_init(Cpu *cpu, Bus* bus){
     cpu->x = 0;
     cpu->y = 0;
     cpu->sp = 0xFD;
-    cpu->pc = 0xFFFC;
+    uint8_t low_byte = bus_read(bus,RESET_VECTOR_ADDRESS_LOW);
+    uint8_t high_byte = bus_read(bus,RESET_VECTOR_ADDRESS_HIGH);
 
+    cpu->pc = ((high_byte << 8) | low_byte);
     cpu->p = 0;
     cpu->p = cpu->p | I_DISABLE_BIT | U_BIT;
 

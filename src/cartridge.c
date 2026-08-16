@@ -4,19 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAGIC_BYTE_COUNT 4
-#define REMAINING_HEADERS_COUNT 12
-#define TRAINER_SIZE 512
-#define PROGRAM_ROM_BLOCK 16384
-#define CHARACTER_ROM_BLOCK 8192
-#define SAVE_DATA_SIZE 1024 * 8
 
-// Flags
-#define FLAGS6_TRAINER_BIT 0x04
-#define FLAGS6_SAVEABLE 0x02
-#define FLAGS6_MAPPER_LOW_MASK 0xF0
-#define FLAGS7_MAPPER_HIGH_MASK 0xF0
-#define FLAGS6_MIRRORING_BIT 0x01
 
 bool cartridge_load(Cartridge *cartridge, const char *rom_name)
 {
