@@ -22,6 +22,7 @@ add_executable(nes_emu
     src/ppu.c
     src/bus.c
     src/cartridge.c
+    src/opcodes.c
 )
 
 target_include_directories(nes_emu PRIVATE include)
