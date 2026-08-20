@@ -18,4 +18,8 @@ void bus_init(Bus* bus, Cartridge* cartridge,Ppu *ppu);
 
 uint8_t bus_read(Bus *bus, uint16_t address);
 
+void bus_write(Bus *bus, uint16_t address, uint8_t value);
+
+
+
 

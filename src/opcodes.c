@@ -1,5 +1,6 @@
 #include "opcodes.h"
 #include "cpu.h"
+#include "addressing_modes.h"
 
 void no_op(Cpu *cpu)
 {
@@ -32,84 +33,56 @@ void load_a_zp_x(Cpu *cpu)
 
 void load_a_abs(Cpu *cpu)
 {
-    uint16_t low = bus_read(cpu->bus, cpu->pc++);
-    uint16_t high = bus_read(cpu->bus, cpu->pc++);
-    uint16_t address = (high << 8) | low;
-
-    cpu->a = bus_read(cpu->bus, address);
+    cpu->a = bus_read(cpu->bus, addr_abs(cpu));
     update_zn_flags(cpu, cpu->a);
     return;
 }
+
+
+
+
+
 
 void load_a_abs_x(Cpu *cpu)
 {
-    uint16_t low = bus_read(cpu->bus, cpu->pc++);
-    uint16_t high = bus_read(cpu->bus, cpu->pc++);
-    uint16_t address = (high << 8) | low;
-    address += cpu->x;
-
-    if ((high << 8) != (address & 0xFF00))
-    {
-        cpu->cycles_remaining++;
-    }
-
-    cpu->a = bus_read(cpu->bus, address);
+    cpu->a = bus_read(cpu->bus, addr_abs_x(cpu));
     update_zn_flags(cpu, cpu->a);
     return;
 }
+
+
+
 
 void load_a_abs_y(Cpu *cpu)
 {
-    uint16_t low = bus_read(cpu->bus, cpu->pc++);
-    uint16_t high = bus_read(cpu->bus, cpu->pc++);
-    uint16_t address = (high << 8) | low;
-    address += cpu->y;
+   
 
-    if ((high << 8) != (address & 0xFF00))
-    {
-        cpu->cycles_remaining++;
-    }
-
-    cpu->a = bus_read(cpu->bus, address);
+    cpu->a = bus_read(cpu->bus, abs_y(cpu));
     update_zn_flags(cpu, cpu->a);
     return;
 }
 
-void load_a_ind_x_pre(Cpu *cpu){
 
-    
-    uint8_t value = bus_read(cpu->bus,cpu->pc++);
-    value += cpu->x;
-    uint8_t low = bus_read(cpu->bus,value);
-    value+=1;
-    uint8_t high = bus_read(cpu->bus,value);
 
-    cpu->a = bus_read(cpu->bus,(high << 8) | low);
 
-    update_zn_flags(cpu,cpu->a);
+void load_a_ind_x_pre(Cpu *cpu)
+{
+
+
+
+    cpu->a = bus_read(cpu->bus, addr_ind_x_pre(cpu));
+
+    update_zn_flags(cpu, cpu->a);
     return;
-
 }
 
-void load_a_ind_y_post(Cpu *cpu){
-    uint8_t value = bus_read(cpu->bus,cpu->pc++);
-    uint8_t low = bus_read(cpu->bus,value);
-    value +=1; //has to be here so it wraps correctly, if done in read it casts to uint16 and does not wrap
-    uint8_t high = bus_read(cpu->bus,value);
-    uint16_t address = (high << 8 ) | low; 
-    address += cpu->y;
-        if ((high << 8) != (address & 0xFF00))
-    {
-        cpu->cycles_remaining++;
-    };
-    cpu->a = bus_read(cpu->bus, address);
-    update_zn_flags(cpu,cpu->a);
-
+void load_a_ind_y_post(Cpu *cpu)
+{
+    cpu->a = bus_read(cpu->bus, addr_ind_y_post(cpu));
+    update_zn_flags(cpu, cpu->a);
 
     return;
-
 }
-
 
 Instruction opcodes[256] = {
 
