@@ -17,6 +17,7 @@ uint16_t addr_abs(Cpu *cpu){
     return address;
 }
 
+
 uint16_t addr_ind_y_post(Cpu *cpu,bool is_reading)
 {
     uint8_t value = bus_read(cpu->bus, cpu->pc++);

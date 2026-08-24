@@ -68,7 +68,7 @@ void bus_write(Bus *bus, uint16_t address, uint8_t value){
     }
 
 
-    return 0;
+    return;
 
 }
 

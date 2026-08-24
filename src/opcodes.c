@@ -1,6 +1,7 @@
 #include "opcodes.h"
 #include "cpu.h"
 #include "addressing_modes.h"
+#include <stdio.h>
 
 void no_op(Cpu *cpu)
 {
@@ -45,7 +46,7 @@ void load_a_abs(Cpu *cpu)
 
 void load_a_abs_x(Cpu *cpu)
 {
-    cpu->a = bus_read(cpu->bus, addr_abs_x(cpu));
+    cpu->a = bus_read(cpu->bus, addr_abs_x(cpu,true));
     update_zn_flags(cpu, cpu->a);
     return;
 }
@@ -57,7 +58,7 @@ void load_a_abs_y(Cpu *cpu)
 {
    
 
-    cpu->a = bus_read(cpu->bus, abs_y(cpu));
+    cpu->a = bus_read(cpu->bus, addr_abs_y(cpu,true));
     update_zn_flags(cpu, cpu->a);
     return;
 }
@@ -78,7 +79,7 @@ void load_a_ind_x_pre(Cpu *cpu)
 
 void load_a_ind_y_post(Cpu *cpu)
 {
-    cpu->a = bus_read(cpu->bus, addr_ind_y_post(cpu));
+    cpu->a = bus_read(cpu->bus, addr_ind_y_post(cpu,true));
     update_zn_flags(cpu, cpu->a);
 
     return;
