@@ -34,7 +34,7 @@ uint16_t addr_ind_y_post(Cpu *cpu,bool is_reading)
 }
 
 uint16_t addr_abs_x(Cpu *cpu,bool is_reading){
-        uint16_t low = bus_read(cpu->bus, cpu->pc++);
+    uint16_t low = bus_read(cpu->bus, cpu->pc++);
     uint16_t high = bus_read(cpu->bus, cpu->pc++);
     uint16_t address = (high << 8) | low;
     address += cpu->x;

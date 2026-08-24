@@ -4,6 +4,7 @@ pkg_check_modules(CRITERION REQUIRED criterion)
 add_executable(unit_tests
     test_helpers.c
         test_lda.c
+        test_sequences.c
 )
 
 target_include_directories(unit_tests PRIVATE
