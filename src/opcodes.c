@@ -71,8 +71,7 @@ void load_a_ind_y_post(Cpu *cpu)
     return;
 }
 
-//Load X
-
+// Load X
 
 void load_x_immediate(Cpu *cpu)
 {
@@ -105,7 +104,6 @@ void load_x_abs(Cpu *cpu)
     return;
 }
 
-
 void load_x_abs_y(Cpu *cpu)
 {
 
@@ -114,7 +112,7 @@ void load_x_abs_y(Cpu *cpu)
     return;
 }
 
-//Load y 
+// Load y
 
 void load_y_immediate(Cpu *cpu)
 {
@@ -147,7 +145,6 @@ void load_y_abs(Cpu *cpu)
     return;
 }
 
-
 void load_y_abs_x(Cpu *cpu)
 {
 
@@ -155,9 +152,6 @@ void load_y_abs_x(Cpu *cpu)
     update_zn_flags(cpu, cpu->y);
     return;
 }
-
-
-
 
 // Store A
 
@@ -207,6 +201,56 @@ void store_a_ind_y_post(Cpu *cpu)
     uint16_t address = addr_ind_y_post(cpu, false);
     bus_write(cpu->bus, address, cpu->a);
 }
+
+// Store X
+
+void store_x_zp(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+
+    bus_write(cpu->bus, address, cpu->x);
+}
+
+void store_x_zp_y(Cpu *cpu)
+{
+
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    address += cpu->y;
+    bus_write(cpu->bus, address, cpu->x);
+}
+
+void store_x_abs(Cpu *cpu)
+{
+    uint16_t address = addr_abs(cpu);
+
+    bus_write(cpu->bus, address, cpu->x);
+}
+
+// Store Y
+
+void store_y_zp(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+
+    bus_write(cpu->bus, address, cpu->y);
+}
+
+void store_y_zp_x(Cpu *cpu)
+{
+
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    address += cpu->x;
+    bus_write(cpu->bus, address, cpu->y);
+}
+
+void store_y_abs(Cpu *cpu)
+{
+    uint16_t address = addr_abs(cpu);
+
+    bus_write(cpu->bus, address, cpu->y);
+}
+
+// Add with carry
 
 void add_with_carry_immediate(Cpu *cpu)
 {
@@ -319,6 +363,84 @@ void add_with_carry_ind_y_post(Cpu *cpu)
     cpu->a = (uint8_t)result;
 }
 
+// Transfer
+
+void transfer_a_to_x(Cpu *cpu)
+{
+    cpu->x = cpu->a;
+    update_zn_flags(cpu, cpu->x);
+}
+
+void transfer_x_to_a(Cpu *cpu)
+{
+    cpu->a = cpu->x;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void transfer_a_to_y(Cpu *cpu)
+{
+    cpu->y = cpu->a;
+    update_zn_flags(cpu, cpu->y);
+}
+
+void transfer_y_to_a(Cpu *cpu)
+{
+    cpu->a = cpu->y;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void transfer_x_to_sp(Cpu *cpu)
+{
+    cpu->sp = cpu->x;
+}
+
+void transfer_sp_to_x(Cpu *cpu)
+{
+    cpu->x = cpu->sp;
+    update_zn_flags(cpu, cpu->x);
+}
+
+// Flags
+
+void clear_carry(Cpu *cpu)
+{
+
+    cpu->p &= ~(C_BIT);
+}
+
+void clear_interrupt_disable(Cpu *cpu)
+{
+
+    cpu->p &= ~(I_DISABLE_BIT);
+}
+
+void clear_overflow(Cpu *cpu)
+{
+    cpu->p &= ~(V_BIT);
+}
+
+void clear_decimal(Cpu *cpu)
+{
+    cpu->p &= ~(D_BIT);
+}
+
+void set_decimal(Cpu *cpu)
+{
+
+    cpu->p |= D_BIT;
+}
+
+void set_interrupt_disable(Cpu *cpu)
+{
+
+    cpu->p |= I_DISABLE_BIT;
+}
+
+void set_carry(Cpu *cpu)
+{
+    cpu->p |= C_BIT;
+}
+
 Instruction opcodes[256] = {
 
     // NOP
@@ -342,6 +464,31 @@ Instruction opcodes[256] = {
     [0x81] = {&store_a_ind_x_pre, 6},
     [0x91] = {&store_a_ind_y_post, 6},
 
+    // LDX
+
+    [0xA2] = {&load_x_immediate, 2},
+    [0xA6] = {&load_x_zp, 3},
+    [0xB6] = {&load_x_zp_y, 4},
+    [0xAE] = {&load_x_abs, 4},
+    [0xBE] = {&load_x_abs_y, 4},
+
+    // STX
+    [0x86] = {&store_x_zp, 3},
+    [0x96] = {&store_x_zp_y, 4},
+    [0x8E] = {&store_x_abs, 4},
+
+    // LDY
+    [0xA0] = {&load_y_immediate, 2},
+    [0xA4] = {&load_y_zp, 3},
+    [0xB4] = {&load_y_zp_x, 4},
+    [0xAC] = {&load_y_abs, 4},
+    [0xBC] = {&load_y_abs_x, 4},
+
+    // STY
+    [0x84] = {&store_y_zp, 3},
+    [0x94] = {&store_y_zp_x, 4},
+    [0x8C] = {&store_y_abs, 4},
+
     // ADC
 
     [0x69] = {&add_with_carry_immediate, 2},
@@ -352,5 +499,23 @@ Instruction opcodes[256] = {
     [0x79] = {&add_with_carry_abs_y, 4},
     [0x61] = {&add_with_carry_ind_x_pre, 6},
     [0x71] = {&add_with_carry_ind_y_post, 5},
+
+    // Transfer
+    [0xAA] = {&transfer_a_to_x, 2},
+    [0xA8] = {&transfer_a_to_y, 2},
+    [0xBA] = {&transfer_sp_to_x, 2},
+    [0x8A] = {&transfer_x_to_a, 2},
+    [0x9A] = {&transfer_x_to_sp, 2},
+    [0x98] = {&transfer_y_to_a, 2},
+
+    // Flags
+
+    [0x18] = {&clear_carry, 2},
+    [0x38] = {&set_carry, 2},
+    [0x58] = {&clear_interrupt_disable, 2},
+    [0x78] = {&set_interrupt_disable, 2},
+    [0xD8] = {&clear_decimal, 2},
+    [0xF8] = {&set_decimal, 2},
+    [0xB8] = {&clear_overflow, 2},
 
 };
