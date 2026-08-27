@@ -115,6 +115,8 @@ void add_with_carry_ind_x_pre(Cpu *cpu);
 
 void add_with_carry_ind_y_post(Cpu *cpu);
 
+// Sub with carry
+
 
 void sub_with_carry_immediate(Cpu *cpu);
 
@@ -131,3 +133,28 @@ void sub_with_carry_abs_y(Cpu *cpu);
 void sub_with_carry_ind_x_pre(Cpu *cpu);
 
 void sub_with_carry_ind_y_post(Cpu *cpu);
+
+// Stack
+
+void push_a_to_stack(Cpu *cpu);
+
+void pull_a_from_stack(Cpu *cpu);
+
+void push_p_to_stack(Cpu *cpu);
+
+void pull_p_from_stack(Cpu *cpu);
+
+// Jump
+
+void jump_abs(Cpu *cpu);
+
+void jump_ind(Cpu *cpu);
+
+void jump_to_sub(Cpu *cpu);
+
+void return_from_sub(Cpu *cpu);
+
+
+
+
+

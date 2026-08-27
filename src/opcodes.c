@@ -563,6 +563,78 @@ void set_carry(Cpu *cpu)
     cpu->p |= C_BIT;
 }
 
+// Stack
+
+void push_a_to_stack(Cpu *cpu)
+{
+
+    bus_write(cpu->bus, (0x0100 + cpu->sp), cpu->a);
+    cpu->sp--;
+}
+
+void pull_a_from_stack(Cpu *cpu)
+{
+    cpu->sp++;
+    cpu->a = bus_read(cpu->bus, 0x0100 + cpu->sp);
+    update_zn_flags(cpu, cpu->a);
+}
+
+void push_p_to_stack(Cpu *cpu)
+{
+    bus_write(cpu->bus, (0x0100 + cpu->sp), (cpu->p) | (1 << 5) | (1 << 4));
+    cpu->sp--;
+}
+
+void pull_p_from_stack(Cpu *cpu)
+{
+
+    cpu->sp++;
+    cpu->sp++;
+    cpu->p = bus_read(cpu->bus, 0x0100 + cpu->sp) | (1 << 5);
+}
+
+// Jump
+
+void jump_abs(Cpu *cpu)
+{
+    cpu->pc = addr_abs(cpu);
+}
+
+void jump_ind(Cpu *cpu)
+{
+    uint8_t low = bus_read(cpu->bus, cpu->pc++);
+    uint8_t high = bus_read(cpu->bus, cpu->pc++);
+    uint16_t address1 = (high << 8) | low;
+    low++;
+    uint16_t address2 = (high << 8) | low;
+
+    uint8_t target_low = bus_read(cpu->bus, address1);
+    uint8_t target_high = bus_read(cpu->bus, address2);
+
+    cpu->pc = ((uint16_t)target_high << 8) | target_low;
+}
+
+void jump_to_sub(Cpu *cpu){
+
+    bus_write(cpu->bus,(0x0100 + cpu->sp),((cpu->pc+1) & 0xFF00) >> 8);
+    cpu->sp--;
+    bus_write(cpu->bus,(0x0100 + cpu->sp),((cpu->pc+1) & 0x00FF));
+    cpu->sp--;
+    cpu->pc = addr_abs(cpu);
+    
+
+}
+
+void return_from_sub(Cpu *cpu){
+
+    cpu->sp++;
+    uint8_t low = bus_read(cpu->bus,0x0100 + cpu->sp);
+    cpu->sp++;
+    uint8_t high = bus_read(cpu->bus,0x0100 + cpu->sp);
+    cpu->pc =  ((high << 8) | low) +1;
+
+}
+
 Instruction opcodes[256] = {
 
     // NOP
@@ -649,5 +721,18 @@ Instruction opcodes[256] = {
     [0xD8] = {&clear_decimal, 2},
     [0xF8] = {&set_decimal, 2},
     [0xB8] = {&clear_overflow, 2},
+
+    // Stack
+    [0x48] = {&push_a_to_stack, 3},
+    [0x68] = {&pull_a_from_stack, 4},
+    [0x08] = {&push_p_to_stack, 3},
+    [0x28] = {&pull_p_from_stack, 40},
+
+    // Jump
+    [0x4C] = {&jump_abs, 3},
+    [0x6C] = {&jump_ind, 5},
+    [0x20] = {&jump_to_sub,6},
+    [0x60] = {&return_from_sub,6},
+
 
 };
