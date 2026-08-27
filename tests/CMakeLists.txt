@@ -5,6 +5,8 @@ add_executable(unit_tests
     test_helpers.c
         test_lda.c
         test_sequences.c
+        test_adc.c
+        test_sbc.c
 )
 
 target_include_directories(unit_tests PRIVATE

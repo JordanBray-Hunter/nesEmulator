@@ -30,7 +30,7 @@ typedef struct cpu
 
 void update_zn_flags(Cpu *cpu, uint8_t value);
 
-void update_adc_flags(Cpu *cpu,uint8_t accumulator ,uint8_t value ,uint16_t result);
+void update_alu_flags(Cpu *cpu,uint8_t accumulator ,uint8_t value ,uint16_t result);
 
 void cpu_init(Cpu *cpu, Bus* bus);
 

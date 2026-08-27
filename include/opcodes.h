@@ -114,3 +114,20 @@ void add_with_carry_abs_y(Cpu *cpu);
 void add_with_carry_ind_x_pre(Cpu *cpu);
 
 void add_with_carry_ind_y_post(Cpu *cpu);
+
+
+void sub_with_carry_immediate(Cpu *cpu);
+
+void sub_with_carry_zp(Cpu *cpu);
+
+void sub_with_carry_zp_x(Cpu *cpu);
+
+void sub_with_carry_abs(Cpu *cpu);
+
+void sub_with_carry_abs_x(Cpu *cpu);
+
+void sub_with_carry_abs_y(Cpu *cpu);
+
+void sub_with_carry_ind_x_pre(Cpu *cpu);
+
+void sub_with_carry_ind_y_post(Cpu *cpu);

@@ -11,13 +11,13 @@ void update_zn_flags(Cpu *cpu, uint8_t value){
     cpu->p |= (value == 0 ? Z_BIT : 0);
 }
 
-void update_adc_flags(Cpu *cpu,uint8_t accumulator ,uint8_t value ,uint16_t result){
+void update_alu_flags(Cpu *cpu,uint8_t accumulator ,uint8_t value ,uint16_t result){
 
 
     cpu->p &= ~(C_BIT | Z_BIT | V_BIT | N_BIT);
     cpu->p |= (result > 0xFF ? C_BIT : 0);
 
-    cpu->p |= (result == 0 ? Z_BIT : 0) | ((uint8_t)result & N_BIT);
+    cpu->p |= ((uint8_t)result == 0 ? Z_BIT : 0) | ((uint8_t)result & N_BIT);
 
     cpu->p |= ((((uint8_t)result ^ accumulator) & ((uint8_t)result ^ value) & 0x80) >> 1);
 

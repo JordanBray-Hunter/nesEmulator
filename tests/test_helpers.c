@@ -2,6 +2,10 @@
 #include "test_helpers.h"
 #include <stdlib.h>
 #include <string.h>
+#include <criterion/criterion.h>
+
+
+
 
 #define TEST_PRG_SIZE 0x8000 // 32KB, covers 0x8000-0xFFFF with no wraparound needed
 
@@ -32,4 +36,14 @@ void load_program(TestSystem *sys, uint16_t address, const uint8_t *program, siz
     // address must be >= 0x8000 (current mapping start); adjust if mapper offset changes.
     uint32_t offset = address - 0x8000;
     memcpy(&sys->cartridge.prg_rom[offset], program, len);
+}
+
+
+
+void checkFlag(Cpu *cpu, int flag, int expected){
+
+    cr_assert_eq(cpu->p & flag, expected,"expected flag value is %d but got %d", expected, cpu->p & flag);
+
+    
+
 }
