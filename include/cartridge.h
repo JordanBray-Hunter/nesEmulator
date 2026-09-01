@@ -18,7 +18,6 @@
 #define FLAGS6_MIRRORING_BIT 0x01
 
 
-
 typedef struct cartridge
 {
     uint8_t *prg_rom;
@@ -37,8 +36,6 @@ typedef struct cartridge
     bool is_vertical;
 
 } Cartridge;
-
-
 
 
 /**

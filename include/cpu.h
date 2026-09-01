@@ -27,6 +27,7 @@ typedef struct cpu
 } Cpu;
 
 
+void compare_flags(Cpu *cpu, uint8_t value1, uint8_t value2);
 
 void update_zn_flags(Cpu *cpu, uint8_t value);
 

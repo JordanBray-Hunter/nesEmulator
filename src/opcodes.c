@@ -614,25 +614,126 @@ void jump_ind(Cpu *cpu)
     cpu->pc = ((uint16_t)target_high << 8) | target_low;
 }
 
-void jump_to_sub(Cpu *cpu){
+void jump_to_sub(Cpu *cpu)
+{
 
-    bus_write(cpu->bus,(0x0100 + cpu->sp),((cpu->pc+1) & 0xFF00) >> 8);
+    bus_write(cpu->bus, (0x0100 + cpu->sp), ((cpu->pc + 1) & 0xFF00) >> 8);
     cpu->sp--;
-    bus_write(cpu->bus,(0x0100 + cpu->sp),((cpu->pc+1) & 0x00FF));
+    bus_write(cpu->bus, (0x0100 + cpu->sp), ((cpu->pc + 1) & 0x00FF));
     cpu->sp--;
     cpu->pc = addr_abs(cpu);
-    
-
 }
 
-void return_from_sub(Cpu *cpu){
+void return_from_sub(Cpu *cpu)
+{
 
     cpu->sp++;
-    uint8_t low = bus_read(cpu->bus,0x0100 + cpu->sp);
+    uint8_t low = bus_read(cpu->bus, 0x0100 + cpu->sp);
     cpu->sp++;
-    uint8_t high = bus_read(cpu->bus,0x0100 + cpu->sp);
-    cpu->pc =  ((high << 8) | low) +1;
+    uint8_t high = bus_read(cpu->bus, 0x0100 + cpu->sp);
+    cpu->pc = ((high << 8) | low) + 1;
+}
 
+// Compare A
+
+void compare_a_immediate(Cpu *cpu)
+{
+    uint8_t value = bus_read(cpu->bus, cpu->pc++);
+    compare_flags(cpu, cpu->a, value);
+}
+
+void compare_a_zp(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    uint8_t value = bus_read(cpu->bus, address);
+    compare_flags(cpu, cpu->a, value);
+}
+
+void compare_a_zp_x(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    address += cpu->x;
+    uint8_t value = bus_read(cpu->bus, address);
+    compare_flags(cpu, cpu->a, value);
+}
+
+void compare_a_abs(Cpu *cpu)
+{
+    uint16_t address = addr_abs(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+    compare_flags(cpu, cpu->a, value);
+}
+
+void compare_a_abs_x(Cpu *cpu)
+{
+    uint16_t address = addr_abs_x(cpu, true);
+    uint8_t value = bus_read(cpu->bus, address);
+    compare_flags(cpu, cpu->a, value);
+}
+
+void compare_a_abs_y(Cpu *cpu)
+{
+    uint16_t address = addr_abs_y(cpu, true);
+    uint8_t value = bus_read(cpu->bus, address);
+    compare_flags(cpu, cpu->a, value);
+}
+
+void compare_a_ind_x_pre(Cpu *cpu)
+{
+    uint16_t address = addr_ind_x_pre(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+    compare_flags(cpu, cpu->a, value);
+}
+
+void compare_a_ind_y_post(Cpu *cpu)
+{
+    uint16_t address = addr_ind_y_post(cpu, true);
+    uint8_t value = bus_read(cpu->bus, address);
+    compare_flags(cpu, cpu->a, value);
+}
+
+// Compare X
+
+void compare_x_immediate(Cpu *cpu)
+{
+    uint8_t value = bus_read(cpu->bus, cpu->pc++);
+    compare_flags(cpu, cpu->x, value);
+}
+
+void compare_x_zp(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    uint8_t value = bus_read(cpu->bus, address);
+    compare_flags(cpu, cpu->x, value);
+}
+
+void compare_x_abs(Cpu *cpu)
+{
+    uint16_t address = addr_abs(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+    compare_flags(cpu, cpu->x, value);
+}
+
+// Compare Y
+
+void compare_y_immediate(Cpu *cpu)
+{
+    uint8_t value = bus_read(cpu->bus, cpu->pc++);
+    compare_flags(cpu, cpu->y, value);
+}
+
+void compare_y_zp(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    uint8_t value = bus_read(cpu->bus, address);
+    compare_flags(cpu, cpu->y, value);
+}
+
+void compare_y_abs(Cpu *cpu)
+{
+    uint16_t address = addr_abs(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+    compare_flags(cpu, cpu->y, value);
 }
 
 Instruction opcodes[256] = {
@@ -731,8 +832,29 @@ Instruction opcodes[256] = {
     // Jump
     [0x4C] = {&jump_abs, 3},
     [0x6C] = {&jump_ind, 5},
-    [0x20] = {&jump_to_sub,6},
-    [0x60] = {&return_from_sub,6},
+    [0x20] = {&jump_to_sub, 6},
+    [0x60] = {&return_from_sub, 6},
 
+    // Compare A
 
+    [0xC9] = {&compare_a_immediate, 2},
+    [0xC5] = {&compare_a_zp, 3},
+    [0xD5] = {&compare_a_zp_x, 4},
+    [0xCD] = {&compare_a_abs, 4},
+    [0xDD] = {&compare_a_abs_x, 4},
+    [0xD9] = {&compare_a_abs_y, 4},
+    [0xC1] = {&compare_a_ind_x_pre, 6},
+    [0xD1] = {&compare_a_ind_y_post, 5},
+
+    // Compare X
+
+    [0xE0] = {&compare_x_immediate, 2},
+    [0xE4] = {&compare_x_zp, 3},
+    [0xEC] = {&compare_x_abs, 4},
+
+    // Compare Y
+
+    [0xC0] = {&compare_y_immediate, 2},
+    [0xC4] = {&compare_y_zp, 3},
+    [0xCC] = {&compare_y_abs, 4},
 };

@@ -155,6 +155,36 @@ void jump_to_sub(Cpu *cpu);
 void return_from_sub(Cpu *cpu);
 
 
+//Compare A
 
+void compare_a_immediate(Cpu *cpu);
 
+void compare_a_zp(Cpu *cpu);
 
+void compare_a_zp_x(Cpu *cpu);
+
+void compare_a_abs(Cpu *cpu);
+
+void compare_a_abs_x(Cpu *cpu);
+
+void compare_a_abs_y(Cpu *cpu);
+
+void compare_a_ind_x_pre(Cpu *cpu);
+
+void compare_a_ind_y_post(Cpu *cpu);
+
+//Compare X
+
+void compare_x_immediate(Cpu *cpu);
+
+void compare_x_zp(Cpu *cpu);
+
+void compare_x_abs(Cpu *cpu);
+
+//Compare Y
+
+void compare_y_immediate(Cpu *cpu);
+
+void compare_y_zp(Cpu *cpu);
+
+void compare_y_abs(Cpu *cpu);

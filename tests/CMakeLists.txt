@@ -7,6 +7,7 @@ add_executable(unit_tests
         test_sequences.c
         test_adc.c
         test_sbc.c
+        test_cmp.c
 )
 
 target_include_directories(unit_tests PRIVATE
