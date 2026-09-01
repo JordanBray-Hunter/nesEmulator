@@ -855,6 +855,215 @@ void branch_overflow_set(Cpu *cpu)
     }
 }
 
+// And
+void bitwise_and_immediate(Cpu *cpu)
+{
+    uint8_t value = bus_read(cpu->bus, cpu->pc++);
+    cpu->a &= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_and_zp(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a &= value;
+    update_zn_flags(cpu, cpu->a);
+}
+void bitwise_and_zp_x(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    address += cpu->x;
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a &= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_and_abs(Cpu *cpu)
+{
+    uint16_t address = addr_abs(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a &= value;
+    update_zn_flags(cpu, cpu->a);
+}
+void bitwise_and_abs_x(Cpu *cpu)
+{
+    uint16_t address = addr_abs_x(cpu, true);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a &= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_and_abs_y(Cpu *cpu)
+{
+    uint16_t address = addr_abs_y(cpu, true);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a &= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_and_ind_x_pre(Cpu *cpu)
+{
+    uint16_t address = addr_ind_x_pre(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a &= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_and_ind_y_post(Cpu *cpu)
+{
+    uint16_t address = addr_ind_y_post(cpu, true);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a &= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+// Or
+void bitwise_or_immediate(Cpu *cpu)
+{
+    uint8_t value = bus_read(cpu->bus, cpu->pc++);
+    cpu->a |= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_or_zp(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a |= value;
+    update_zn_flags(cpu, cpu->a);
+}
+void bitwise_or_zp_x(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    address += cpu->x;
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a |= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_or_abs(Cpu *cpu)
+{
+    uint16_t address = addr_abs(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a |= value;
+    update_zn_flags(cpu, cpu->a);
+}
+void bitwise_or_abs_x(Cpu *cpu)
+{
+    uint16_t address = addr_abs_x(cpu, true);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a |= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_or_abs_y(Cpu *cpu)
+{
+    uint16_t address = addr_abs_y(cpu, true);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a |= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_or_ind_x_pre(Cpu *cpu)
+{
+    uint16_t address = addr_ind_x_pre(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a |= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_or_ind_y_post(Cpu *cpu)
+{
+    uint16_t address = addr_ind_y_post(cpu, true);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a |= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+// Exlusive Or
+void bitwise_xor_immediate(Cpu *cpu)
+{
+    uint8_t value = bus_read(cpu->bus, cpu->pc++);
+    cpu->a ^= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_xor_zp(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a ^= value;
+    update_zn_flags(cpu, cpu->a);
+}
+void bitwise_xor_zp_x(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    address += cpu->x;
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a ^= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_xor_abs(Cpu *cpu)
+{
+    uint16_t address = addr_abs(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a ^= value;
+    update_zn_flags(cpu, cpu->a);
+}
+void bitwise_xor_abs_x(Cpu *cpu)
+{
+    uint16_t address = addr_abs_x(cpu, true);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a ^= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_xor_abs_y(Cpu *cpu)
+{
+    uint16_t address = addr_abs_y(cpu, true);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a ^= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+void bitwise_xor_ind_x_pre(Cpu *cpu)
+{
+    uint16_t address = addr_ind_x_pre(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a ^= value;
+    update_zn_flags(cpu, cpu->a);
+}
+void bitwise_xor_ind_y_post(Cpu *cpu)
+{
+    uint16_t address = addr_ind_y_post(cpu, true);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->a ^= value;
+    update_zn_flags(cpu, cpu->a);
+}
+
+// Bit Test
+
+void bit_test_zp(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->p &= ~(N_BIT | V_BIT | Z_BIT);
+    cpu->p |= (value & (V_BIT | N_BIT));
+    value &= cpu->a;
+    cpu->p |= (value == 0 ? Z_BIT : 0);
+}
+void bit_test_abs(Cpu *cpu)
+{
+    uint16_t address = addr_abs(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+    cpu->p &= ~(N_BIT | V_BIT | Z_BIT);
+    cpu->p |= (value & (V_BIT | N_BIT));
+    value &= cpu->a;
+    cpu->p |= (value == 0 ? Z_BIT : 0);
+}
+
 Instruction opcodes[256] = {
 
     // NOP
@@ -987,4 +1196,44 @@ Instruction opcodes[256] = {
     [0x30] = {&branch_minus, 2},
     [0x50] = {&branch_overflow_clear, 2},
     [0x70] = {&branch_overflow_set, 2},
+
+    // And
+    [0x29] = {&bitwise_and_immediate, 2},
+    [0x25] = {&bitwise_and_zp, 3},
+    [0x35] = {&bitwise_and_zp_x, 4},
+    [0x2D] = {&bitwise_and_abs, 4},
+    [0x3D] = {&bitwise_and_abs_x, 4},
+    [0x39] = {&bitwise_and_abs_y, 4},
+    [0x21] = {&bitwise_and_ind_x_pre, 6},
+    [0x31] = {&bitwise_and_ind_y_post, 5},
+
+    // Or
+    [0x09] = {&bitwise_or_immediate, 2},
+    [0x05] = {&bitwise_or_zp, 3},
+    [0x15] = {&bitwise_or_zp_x, 4},
+    [0x0D] = {&bitwise_or_abs, 4},
+    [0x1D] = {&bitwise_or_abs_x, 4},
+    [0x19] = {&bitwise_or_abs_y, 4},
+    [0x01] = {&bitwise_or_ind_x_pre, 6},
+    [0x11] = {&bitwise_or_ind_y_post, 5},
+
+    // Exclusive Or
+    [0x49] = {&bitwise_xor_immediate, 2},
+    [0x45] = {&bitwise_xor_zp, 3},
+    [0x55] = {&bitwise_xor_zp_x, 4},
+    [0x4D] = {&bitwise_xor_abs, 4},
+    [0x5D] = {&bitwise_xor_abs_x, 4},
+    [0x59] = {&bitwise_xor_abs_y, 4},
+    [0x41] = {&bitwise_xor_ind_x_pre, 6},
+    [0x51] = {&bitwise_xor_ind_y_post, 5},
+
+    // Bit Test
+
+    [0x24] = {&bit_test_zp, 3},
+    [0x2C] = {&bit_test_abs, 4},
+
+    // Increment
+
+
+
 };

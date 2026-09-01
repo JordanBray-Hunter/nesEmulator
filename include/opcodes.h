@@ -206,6 +206,40 @@ void branch_minus(Cpu * cpu);
 void branch_overflow_clear(Cpu * cpu);
 void branch_overflow_set(Cpu * cpu);
 
+// AND
 
+void bitwise_and_immediate(Cpu *cpu);
+void bitwise_and_zp(Cpu *cpu);
+void bitwise_and_zp_x(Cpu *cpu);
+void bitwise_and_abs(Cpu *cpu);
+void bitwise_and_abs_x(Cpu *cpu);
+void bitwise_and_abs_y(Cpu *cpu);
+void bitwise_and_ind_x_pre(Cpu *cpu);
+void bitwise_and_ind_y_post(Cpu *cpu);
 
+// Or
 
+void bitwise_or_immediate(Cpu *cpu);
+void bitwise_or_zp(Cpu *cpu);
+void bitwise_or_zp_x(Cpu *cpu);
+void bitwise_or_abs(Cpu *cpu);
+void bitwise_or_abs_x(Cpu *cpu);
+void bitwise_or_abs_y(Cpu *cpu);
+void bitwise_or_ind_x_pre(Cpu *cpu);
+void bitwise_or_ind_y_post(Cpu *cpu);
+
+// Exlusive Or
+
+void bitwise_xor_immediate(Cpu *cpu);
+void bitwise_xor_zp(Cpu *cpu);
+void bitwise_xor_zp_x(Cpu *cpu);
+void bitwise_xor_abs(Cpu *cpu);
+void bitwise_xor_abs_x(Cpu *cpu);
+void bitwise_xor_abs_y(Cpu *cpu);
+void bitwise_xor_ind_x_pre(Cpu *cpu);
+void bitwise_xor_ind_y_post(Cpu *cpu);
+
+// Bit Test
+
+void bit_test_zp(Cpu *cpu);
+void bit_test_abs(Cpu *cpu);
