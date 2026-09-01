@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 
         BeginDrawing();
         ClearBackground(WHITE);
-
+        cpu_clock(&cpu);
         EndDrawing();
     }
 

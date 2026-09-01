@@ -736,6 +736,125 @@ void compare_y_abs(Cpu *cpu)
     compare_flags(cpu, cpu->y, value);
 }
 
+// Branch
+
+void branch_carry_clear(Cpu *cpu)
+{
+    int8_t offset = (int8_t)bus_read(cpu->bus, cpu->pc++);
+    if ((cpu->p & C_BIT) == 0)
+    {
+        cpu->cycles_remaining++;
+        uint16_t newvalue = cpu->pc + offset;
+        if ((cpu->pc & 0xFF00) != (newvalue & 0xFF00))
+        {
+            cpu->cycles_remaining++;
+        }
+        cpu->pc = newvalue;
+    }
+}
+
+void branch_carry_set(Cpu *cpu)
+{
+    int8_t offset = (int8_t)bus_read(cpu->bus, cpu->pc++);
+    if ((cpu->p & C_BIT) != 0)
+    {
+        cpu->cycles_remaining++;
+        uint16_t newvalue = cpu->pc + offset;
+        if ((cpu->pc & 0xFF00) != (newvalue & 0xFF00))
+        {
+            cpu->cycles_remaining++;
+        }
+        cpu->pc = newvalue;
+    }
+}
+
+void branch_equal(Cpu *cpu)
+{
+    int8_t offset = (int8_t)bus_read(cpu->bus, cpu->pc++);
+    if ((cpu->p & Z_BIT) != 0)
+    {
+        cpu->cycles_remaining++;
+        uint16_t newvalue = cpu->pc + offset;
+        if ((cpu->pc & 0xFF00) != (newvalue & 0xFF00))
+        {
+            cpu->cycles_remaining++;
+        }
+        cpu->pc = newvalue;
+    }
+}
+void branch_not_equal(Cpu *cpu)
+{
+    int8_t offset = (int8_t)bus_read(cpu->bus, cpu->pc++);
+    if ((cpu->p & Z_BIT) == 0)
+    {
+        cpu->cycles_remaining++;
+        uint16_t newvalue = cpu->pc + offset;
+        if ((cpu->pc & 0xFF00) != (newvalue & 0xFF00))
+        {
+            cpu->cycles_remaining++;
+        }
+        cpu->pc = newvalue;
+    }
+}
+
+void branch_plus(Cpu *cpu)
+{
+    int8_t offset = (int8_t)bus_read(cpu->bus, cpu->pc++);
+    if ((cpu->p & N_BIT) == 0)
+    {
+        cpu->cycles_remaining++;
+        uint16_t newvalue = cpu->pc + offset;
+        if ((cpu->pc & 0xFF00) != (newvalue & 0xFF00))
+        {
+            cpu->cycles_remaining++;
+        }
+        cpu->pc = newvalue;
+    }
+}
+void branch_minus(Cpu *cpu)
+{
+    int8_t offset = (int8_t)bus_read(cpu->bus, cpu->pc++);
+    if ((cpu->p & N_BIT) != 0)
+    {
+        cpu->cycles_remaining++;
+        uint16_t newvalue = cpu->pc + offset;
+        if ((cpu->pc & 0xFF00) != (newvalue & 0xFF00))
+        {
+            cpu->cycles_remaining++;
+        }
+        cpu->pc = newvalue;
+    }
+}
+
+void branch_overflow_clear(Cpu *cpu)
+{
+    int8_t offset = (int8_t)bus_read(cpu->bus, cpu->pc++);
+    if ((cpu->p & V_BIT) == 0)
+    {
+        cpu->cycles_remaining++;
+        uint16_t newvalue = cpu->pc + offset;
+        if ((cpu->pc & 0xFF00) != (newvalue & 0xFF00))
+        {
+            cpu->cycles_remaining++;
+        }
+        cpu->pc = newvalue;
+    }
+}
+void branch_overflow_set(Cpu *cpu)
+{
+    int8_t offset = (int8_t)bus_read(cpu->bus, cpu->pc++);
+    if ((cpu->p & V_BIT) != 0)
+    {
+        cpu->cycles_remaining++;
+        uint16_t newvalue = cpu->pc + offset;
+        if ((cpu->pc & 0xFF00) != (newvalue & 0xFF00))
+        {
+            cpu->cycles_remaining++;
+        }
+        cpu->pc = newvalue;
+    }
+}
+
 Instruction opcodes[256] = {
 
     // NOP
@@ -827,7 +946,7 @@ Instruction opcodes[256] = {
     [0x48] = {&push_a_to_stack, 3},
     [0x68] = {&pull_a_from_stack, 4},
     [0x08] = {&push_p_to_stack, 3},
-    [0x28] = {&pull_p_from_stack, 40},
+    [0x28] = {&pull_p_from_stack, 4},
 
     // Jump
     [0x4C] = {&jump_abs, 3},
@@ -857,4 +976,15 @@ Instruction opcodes[256] = {
     [0xC0] = {&compare_y_immediate, 2},
     [0xC4] = {&compare_y_zp, 3},
     [0xCC] = {&compare_y_abs, 4},
+
+    // Branch
+
+    [0x90] = {&branch_carry_clear, 2},
+    [0xB0] = {&branch_carry_set, 2},
+    [0xF0] = {&branch_equal, 2},
+    [0xD0] = {&branch_not_equal, 2},
+    [0x10] = {&branch_plus, 2},
+    [0x30] = {&branch_minus, 2},
+    [0x50] = {&branch_overflow_clear, 2},
+    [0x70] = {&branch_overflow_set, 2},
 };

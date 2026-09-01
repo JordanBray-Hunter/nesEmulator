@@ -52,6 +52,8 @@ void cpu_init(Cpu *cpu, Bus *bus)
     cpu->a = 0;
     cpu->x = 0;
     cpu->y = 0;
+    cpu->cycles_remaining = 0;
+
     cpu->sp = 0xFD;
     uint8_t low_byte = bus_read(cpu->bus, RESET_VECTOR_ADDRESS_LOW);
     uint8_t high_byte = bus_read(cpu->bus, RESET_VECTOR_ADDRESS_HIGH);

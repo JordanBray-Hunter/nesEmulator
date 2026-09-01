@@ -1,9 +1,11 @@
 #pragma once
 #include "cpu.h"
 
+// could seperate all instructions into a type file. eg access transfer
+// branch, arithmetic
+
 typedef struct instruction
 {
-
     void (*opcode_func)(Cpu *cpu);
     uint8_t cycles;
 
@@ -188,3 +190,22 @@ void compare_y_immediate(Cpu *cpu);
 void compare_y_zp(Cpu *cpu);
 
 void compare_y_abs(Cpu *cpu);
+
+
+// Branch
+
+void branch_carry_clear(Cpu * cpu);
+void branch_carry_set(Cpu * cpu);
+
+void branch_equal(Cpu * cpu);
+void branch_not_equal(Cpu * cpu);
+
+void branch_plus(Cpu * cpu);
+void branch_minus(Cpu * cpu);
+
+void branch_overflow_clear(Cpu * cpu);
+void branch_overflow_set(Cpu * cpu);
+
+
+
+
