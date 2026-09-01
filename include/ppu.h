@@ -5,6 +5,7 @@
 
 
 #define NMI_ENABLE_BIT (1 << 7 )
+#define V_BLANK_BIT (1 << 7)
 #define BG_ENABLE_BIT (1 << 3)
 
 typedef struct ppu
@@ -21,6 +22,8 @@ typedef struct ppu
     uint16_t PPUSCROLL; //internal 2-byte state accessed by two 1-byte accesses
     uint16_t PPUADDR; // internal 2-byte state accessed by two 1-byte accesses
     uint8_t PPUDATA;
+    uint8_t ppu_data_buffer;
+
     uint8_t OAMDMA;
     Color pixels[256 * 240];
     bool odd_frame;

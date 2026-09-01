@@ -49,11 +49,15 @@ int main(int argc, char **argv)
         {
             show_tiles = !show_tiles;
         }
+        if (IsKeyPressed(KEY_O))
+        {
+            ppu.PPUMASK ^= BG_ENABLE_BIT;
+        }
 
         
         while (!ppu.frame_ready)
         {
-            //cpu_clock(&cpu);
+            cpu_clock(&cpu);
             ppu_clock(&ppu);
             ppu_clock(&ppu);
             ppu_clock(&ppu);

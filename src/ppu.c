@@ -8,6 +8,8 @@ void ppu_init(Ppu *ppu, Cartridge *cartridge)
     ppu->cartridge = cartridge;
     ppu->gameTexture = LoadRenderTexture(256, 240);
 
+    ppu->PPUCTRL = 0;
+    ppu->PPUMASK = 0;
     ppu->dot = 0;
     ppu->scan_line = 0;
 }
@@ -19,8 +21,19 @@ void ppu_clock(Ppu *ppu)
 
     if (ppu->scan_line < 240 && ppu->dot < 256)
     {
-        int value = GetRandomValue(0, 3);
-        ppu->pixels[ppu->scan_line * 256 + ppu->dot] = palette[value];
+        if ((ppu->PPUMASK & BG_ENABLE_BIT))
+        {
+
+            int value = GetRandomValue(0, 3);
+            ppu->pixels[ppu->scan_line * 256 + ppu->dot] = palette[value];
+        }
+        else
+        {
+            ppu->pixels[ppu->scan_line * 256 + ppu->dot] = WHITE;
+        }
+    }
+    if(ppu->scan_line == 261 && ppu->dot == 1){
+        ppu->PPUSTATUS &= ~(V_BLANK_BIT);
     }
 
     ppu->dot++;
@@ -32,24 +45,66 @@ void ppu_clock(Ppu *ppu)
         if (ppu->scan_line == 241)
         {
             ppu->frame_ready = true;
+            ppu->PPUSTATUS |= V_BLANK_BIT;
         }
 
-        if (ppu->scan_line >= 262) 
+
+        if (ppu->scan_line >= 262)
         {
             ppu->scan_line = 0;
         }
     }
 }
 
-uint8_t ppu_read(Ppu *ppu, uint16_t address){
+uint8_t ppu_read(Ppu *ppu, uint16_t address)
+{
+    printf("trying to read");
+    int selected_register = address & 0x0007;
+    uint8_t data = 0;
 
+    switch (selected_register)
+    {
+    case 0x0000:
+        return ppu->PPUCTRL;
+        break;
+
+    case 0x0001:
+        return ppu->PPUMASK;
+        break;
+    case 0x0002:
+        data = ppu->PPUSTATUS;
+        ppu->PPUSTATUS &= ~(V_BLANK_BIT);
+        
+        return data;
+    case 0x0007:
+        return ppu->PPUDATA; // need delay fetch thing
+
+    default:
+        break;
+    };
 }
 
-void ppu_write(Ppu *ppu, uint16_t address, uint8_t value){
+void ppu_write(Ppu *ppu, uint16_t address, uint8_t value)
+{
 
+    int selected_register = address & 0x0007;
+
+    switch (selected_register)
+    {
+    case 0x0000:
+        ppu->PPUCTRL = value;
+        break;
+
+    case 0x0001:
+        ppu->PPUMASK = value;
+        break;
+    case 0x0007:
+        ppu->PPUDATA = value;
+
+    default:
+        break;
+    };
 }
-
-
 
 // Debug function to draw entire char rom to texture
 void draw_chrs_to_texture(RenderTexture2D *texture, uint8_t *chr_rom)

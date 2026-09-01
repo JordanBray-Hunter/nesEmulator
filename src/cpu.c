@@ -1,5 +1,6 @@
 #include "cpu.h"
 #include "opcodes.h"
+#include "stdio.h"
 
 void update_zn_flags(Cpu *cpu, uint8_t value)
 {
@@ -32,8 +33,6 @@ void compare_flags(Cpu *cpu, uint8_t value1, uint8_t value2)
     cpu->p |= ((uint8_t)result == 0 ? Z_BIT : 0);
     cpu->p |= ((uint8_t)result & N_BIT);
 }
-    
-
 
 void cpu_reset(Cpu *cpu)
 {
@@ -65,6 +64,7 @@ void cpu_init(Cpu *cpu, Bus *bus)
 
 void cpu_clock(Cpu *cpu)
 {
+    //printf("cycles remaining: %d \n ", cpu->cycles_remaining);
 
     if (cpu->cycles_remaining != 0)
     {
@@ -74,6 +74,7 @@ void cpu_clock(Cpu *cpu)
 
     uint8_t opcode = bus_read(cpu->bus, cpu->pc++);
 
+    printf("current opcode: %d \n ", opcode);
     Instruction instruction = opcodes[opcode];
 
     cpu->cycles_remaining = instruction.cycles - 1;

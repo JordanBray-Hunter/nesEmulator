@@ -17,7 +17,7 @@ uint8_t bus_read(Bus *bus, uint16_t address){
     }
     if(0x2000 <= address && address <= 0x3FFF){
         //TOOD: change to map to register
-        return ppu_read(bus->ppu,address - 0x2000);
+        return ppu_read(bus->ppu,address);
     }
     if(0x4000 <= address && address <= 0x4017){
         //TODO: Map to NES APU AND IO
@@ -52,11 +52,11 @@ void bus_write(Bus *bus, uint16_t address, uint8_t value){
     }
     if(0x4000 <= address && address <= 0x4017){
         //TODO: Map to NES APU AND IO
-        return 0;
+        return;
     }
     if(0x4018 <= address && address <= 0x401F){
         //USUALLY UNUSED, will leave blank for now.
-        return 0;
+        return;
     }
     if(0x4020 <= address && address <= 0xFFFF){
         //TODO: Mapt to cartridge, based off mapper. 
