@@ -17,7 +17,7 @@ uint8_t bus_read(Bus *bus, uint16_t address){
     }
     if(0x2000 <= address && address <= 0x3FFF){
         //TOOD: change to map to register
-        return 0;
+        return ppu_read(bus->ppu,address - 0x2000);
     }
     if(0x4000 <= address && address <= 0x4017){
         //TODO: Map to NES APU AND IO
@@ -48,8 +48,7 @@ void bus_write(Bus *bus, uint16_t address, uint8_t value){
         bus->ram[address % 0x0800] = value;
     }
     if(0x2000 <= address && address <= 0x3FFF){
-        //TOOD: change to map to register think apu ones maybe ppu
-        return 0;
+        ppu_write(bus->ppu,address, value);
     }
     if(0x4000 <= address && address <= 0x4017){
         //TODO: Map to NES APU AND IO
@@ -61,7 +60,6 @@ void bus_write(Bus *bus, uint16_t address, uint8_t value){
     }
     if(0x4020 <= address && address <= 0xFFFF){
         //TODO: Mapt to cartridge, based off mapper. 
-        //
 
 
        bus->cartridge->prg_rom[address - 0x8000];

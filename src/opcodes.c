@@ -589,8 +589,9 @@ void pull_p_from_stack(Cpu *cpu)
 {
 
     cpu->sp++;
-    cpu->sp++;
-    cpu->p = bus_read(cpu->bus, 0x0100 + cpu->sp) | (1 << 5);
+    uint8_t flags = bus_read(cpu->bus, 0x0100 + cpu->sp);
+    flags = (flags & ~B_BIT) | U_BIT;
+    cpu->p = flags;
 }
 
 // Jump
@@ -632,6 +633,42 @@ void return_from_sub(Cpu *cpu)
     cpu->sp++;
     uint8_t high = bus_read(cpu->bus, 0x0100 + cpu->sp);
     cpu->pc = ((high << 8) | low) + 1;
+}
+
+void break_irq(Cpu *cpu)
+{
+
+    uint8_t high = (((cpu->pc + 1) & 0xFF00) >> 8);
+    uint8_t low = (((cpu->pc + 1) & 0x00FF));
+    bus_write(cpu->bus, (0x0100 + cpu->sp), high);
+    cpu->sp--;
+    bus_write(cpu->bus, (0x0100 + cpu->sp), low);
+    cpu->sp--;
+    bus_write(cpu->bus, (0x0100 + cpu->sp), (cpu->p | B_BIT | U_BIT));
+    cpu->sp--;
+
+    cpu->p |= I_DISABLE_BIT;
+
+    uint8_t new_low = bus_read(cpu->bus, 0xFFFE);
+    uint8_t new_high = bus_read(cpu->bus, 0xFFFF);
+
+    cpu->pc = ((new_high << 8) | new_low);
+}
+
+void return_from_interrupt(Cpu *cpu)
+{
+    cpu->sp++;
+    uint8_t flags = bus_read(cpu->bus, 0x0100 + cpu->sp);
+    flags = (flags & ~B_BIT) | U_BIT;
+    cpu->p = flags;
+
+
+    cpu->sp++;
+    uint8_t low = bus_read(cpu->bus, 0x0100 + cpu->sp);
+    cpu->sp++;
+    uint8_t high = bus_read(cpu->bus, 0x0100 + cpu->sp);
+
+    cpu->pc = ((high << 8) | low);
 }
 
 // Compare A
@@ -1064,6 +1101,126 @@ void bit_test_abs(Cpu *cpu)
     cpu->p |= (value == 0 ? Z_BIT : 0);
 }
 
+// Increment
+
+void increment_memory_zp(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+
+    uint8_t value = bus_read(cpu->bus, address);
+    // Dummy Write
+    bus_write(cpu->bus, address, value);
+    value++;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void increment_memory_zp_x(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    address += cpu->x;
+
+    uint8_t value = bus_read(cpu->bus, address);
+    // Dummy Write
+    bus_write(cpu->bus, address, value);
+    value++;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+
+void increment_memory_abs(Cpu *cpu)
+{
+    uint16_t address = addr_abs(cpu);
+
+    uint8_t value = bus_read(cpu->bus, address);
+    // Dummy Write
+    bus_write(cpu->bus, address, value);
+    value++;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void increment_memory_abs_x(Cpu *cpu)
+{
+    uint16_t address = addr_abs_x(cpu, false);
+
+    uint8_t value = bus_read(cpu->bus, address);
+    // Dummy Write
+    bus_write(cpu->bus, address, value);
+    value++;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+
+void increment_x(Cpu *cpu)
+{
+    cpu->x += 1;
+    update_zn_flags(cpu, cpu->x);
+}
+void increment_y(Cpu *cpu)
+{
+    cpu->y += 1;
+    update_zn_flags(cpu, cpu->y);
+}
+
+// Decrement
+
+void decrement_memory_zp(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+
+    uint8_t value = bus_read(cpu->bus, address);
+    // Dummy Write
+    bus_write(cpu->bus, address, value);
+    value--;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void decrement_memory_zp_x(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    address += cpu->x;
+
+    uint8_t value = bus_read(cpu->bus, address);
+    // Dummy Write
+    bus_write(cpu->bus, address, value);
+    value--;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+
+void decrement_memory_abs(Cpu *cpu)
+{
+    uint16_t address = addr_abs(cpu);
+
+    uint8_t value = bus_read(cpu->bus, address);
+    // Dummy Write
+    bus_write(cpu->bus, address, value);
+    value--;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void decrement_memory_abs_x(Cpu *cpu)
+{
+    uint16_t address = addr_abs_x(cpu, false);
+
+    uint8_t value = bus_read(cpu->bus, address);
+    // Dummy Write
+    bus_write(cpu->bus, address, value);
+    value--;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+
+void decrement_x(Cpu *cpu)
+{
+    cpu->x -= 1;
+    update_zn_flags(cpu, cpu->x);
+}
+void decrement_y(Cpu *cpu)
+{
+    cpu->y -= 1;
+    update_zn_flags(cpu, cpu->y);
+}
+
 Instruction opcodes[256] = {
 
     // NOP
@@ -1162,6 +1319,8 @@ Instruction opcodes[256] = {
     [0x6C] = {&jump_ind, 5},
     [0x20] = {&jump_to_sub, 6},
     [0x60] = {&return_from_sub, 6},
+    [0x00] = {&break_irq,7},
+    [0x40] = {&return_from_interrupt,6},
 
     // Compare A
 
@@ -1234,6 +1393,19 @@ Instruction opcodes[256] = {
 
     // Increment
 
+    [0xE6] = {&increment_memory_zp, 5},
+    [0xF6] = {&increment_memory_zp_x, 6},
+    [0xEE] = {&increment_memory_abs, 6},
+    [0xFE] = {&increment_memory_abs_x, 7},
+    [0xE8] = {&increment_x, 2},
+    [0xC8] = {&increment_y, 2},
 
+    // Decrement
+    [0xC6] = {&decrement_memory_zp, 5},
+    [0xD6] = {&decrement_memory_zp_x, 6},
+    [0xCE] = {&decrement_memory_abs, 6},
+    [0xDE] = {&decrement_memory_abs_x, 7},
+    [0xCA] = {&decrement_x, 2},
+    [0x88] = {&decrement_y, 2},
 
 };

@@ -26,7 +26,9 @@ add_library(emu_core
     src/addressing_modes.c
 )
 
-target_include_directories(emu_core PUBLIC include)
+target_include_directories(emu_core PUBLIC include )
+target_link_libraries(emu_core PRIVATE raylib)
+
 
 # --- Main executable ---
 add_executable(nes_emu src/main.c)
@@ -35,3 +37,4 @@ target_link_libraries(nes_emu PRIVATE emu_core raylib)
 
 enable_testing()
 add_subdirectory(tests)
+

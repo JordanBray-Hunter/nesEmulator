@@ -156,6 +156,9 @@ void jump_to_sub(Cpu *cpu);
 
 void return_from_sub(Cpu *cpu);
 
+void break_irq(Cpu *cpu);
+
+void return_from_interrupt(Cpu *cpu);
 
 //Compare A
 
@@ -243,3 +246,23 @@ void bitwise_xor_ind_y_post(Cpu *cpu);
 
 void bit_test_zp(Cpu *cpu);
 void bit_test_abs(Cpu *cpu);
+
+// Increment
+
+void increment_memory_zp(Cpu *cpu);
+void increment_memory_zp_x(Cpu *cpu);
+void increment_memory_abs(Cpu *cpu);
+void increment_memory_abs_x(Cpu *cpu);
+
+void increment_x(Cpu *cpu);
+void increment_y(Cpu *cpu);
+
+// Decrement
+
+void decrement_memory_zp(Cpu *cpu);
+void decrement_memory_zp_x(Cpu *cpu);
+void decrement_memory_abs(Cpu *cpu);
+void decrement_memory_abs_x(Cpu *cpu);
+
+void decrement_x(Cpu *cpu);
+void decrement_y(Cpu *cpu);

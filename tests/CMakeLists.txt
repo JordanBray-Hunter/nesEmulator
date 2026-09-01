@@ -18,8 +18,9 @@ target_include_directories(unit_tests PRIVATE
 target_link_libraries(unit_tests PRIVATE
     emu_core
     ${CRITERION_LIBRARIES}
+    raylib
 )
 
 target_compile_options(unit_tests PRIVATE ${CRITERION_CFLAGS_OTHER})
 
-add_test(NAME unit_tests COMMAND unit_tests)
+add_test(NAME unit_tests COMMAND unit_tests )
