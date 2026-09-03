@@ -2,6 +2,64 @@
 #include "ppu.h"
 #include <stdio.h>
 
+uint8_t ppu_vram_read(Ppu *ppu, uint16_t address)
+{
+
+    if (address >= 0x0000 && address <= 0x0FFF)
+    {
+        return ppu->cartridge->chr_rom[address];
+    }
+    else if (address >= 0x1000 && address <= 0x1FFF)
+    {
+        return ppu->cartridge->chr_rom[address];
+    }
+    else if (address >= 0x2000 )
+    {
+        uint16_t base_address = address - 0x2000;
+
+        // Need mirroring etc.
+        if (ppu->cartridge->is_vertical)
+        {
+            // ignore bit 11 to mirror vertically
+            return ppu->v_ram[base_address & (~(1 << 11))];
+        }
+        else
+        {
+            // ignore bit 10 to map horiz
+            return ppu->v_ram[base_address & (~(1 << 10))];
+        }
+    }
+}
+
+void ppu_vram_write(Ppu *ppu, uint16_t address, uint8_t value)
+{
+    if (address >= 0x0000 && address <= 0x0FFF)
+    {
+        ppu->cartridge->chr_rom[address] = value;
+    }
+    else if (address >= 0x1000 && address <= 0x1FFF)
+    {  
+        //Need to check if ram or rom
+         ppu->cartridge->chr_rom[address] = value;
+    }
+    else if (address >= 0x2000 && address <= 0x2FFF)
+    {
+        uint16_t base_address = address - 0x2000;
+
+        // Need mirroring etc.
+        if (ppu->cartridge->is_vertical)
+        {
+            // ignore bit 11 to mirror vertically
+            ppu->v_ram[base_address & (~(1 << 11))] = value;
+        }
+        else
+        {
+            // replace bit 10 with bit 11 and clear bit 11 
+            ppu->v_ram[base_address & (~((1 << 10) | (1 << 11))) | ((base_address & (1 << 11)) >> 1)] = value;
+        }
+    }
+}
+
 void ppu_init(Ppu *ppu, Cartridge *cartridge)
 {
 
@@ -32,7 +90,8 @@ void ppu_clock(Ppu *ppu)
             ppu->pixels[ppu->scan_line * 256 + ppu->dot] = WHITE;
         }
     }
-    if(ppu->scan_line == 261 && ppu->dot == 1){
+    if (ppu->scan_line == 261 && ppu->dot == 1)
+    {
         ppu->PPUSTATUS &= ~(V_BLANK_BIT);
     }
 
@@ -48,7 +107,6 @@ void ppu_clock(Ppu *ppu)
             ppu->PPUSTATUS |= V_BLANK_BIT;
         }
 
-
         if (ppu->scan_line >= 262)
         {
             ppu->scan_line = 0;
@@ -58,7 +116,6 @@ void ppu_clock(Ppu *ppu)
 
 uint8_t ppu_read(Ppu *ppu, uint16_t address)
 {
-    printf("trying to read");
     int selected_register = address & 0x0007;
     uint8_t data = 0;
 
@@ -74,9 +131,13 @@ uint8_t ppu_read(Ppu *ppu, uint16_t address)
     case 0x0002:
         data = ppu->PPUSTATUS;
         ppu->PPUSTATUS &= ~(V_BLANK_BIT);
-        
+
         return data;
     case 0x0007:
+        
+        if(ppu->PPUADDR     )
+        
+        data = ppu->ppu_data_buffer;
         return ppu->PPUDATA; // need delay fetch thing
 
     default:

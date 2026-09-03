@@ -25,6 +25,12 @@ int main(int argc, char **argv)
 
     bool loaded = cartridge_load(&cartridge, argv[1]);
 
+    printf("=== PRG VECTOR INTEGRITY CHECK ===\n");
+printf("PRG Size Loaded: %d bytes\n", cartridge.prg_size);
+printf("Byte at internal PRG index [32764] ($FFFC): 0x%02X\n", cartridge.prg_rom[32764]);
+printf("Byte at internal PRG index [32765] ($FFFD): 0x%02X\n", cartridge.prg_rom[32765]);
+
+
     bool show_tiles = false;
 
     if (!loaded)

@@ -74,7 +74,7 @@ void cpu_clock(Cpu *cpu)
 
     uint8_t opcode = bus_read(cpu->bus, cpu->pc++);
 
-    printf("current opcode: %d \n ", opcode);
+    //printf("current opcode: %d \n ", opcode);
     Instruction instruction = opcodes[opcode];
 
     cpu->cycles_remaining = instruction.cycles - 1;

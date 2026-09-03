@@ -18,11 +18,16 @@ typedef struct ppu
     uint8_t PPUSTATUS;
     uint8_t OAMADDR;
     uint8_t OAMDATA;
-    bool latch;
+    bool write_toggle;
     uint16_t PPUSCROLL; //internal 2-byte state accessed by two 1-byte accesses
     uint16_t PPUADDR; // internal 2-byte state accessed by two 1-byte accesses
     uint8_t PPUDATA;
     uint8_t ppu_data_buffer;
+
+    // internal reg
+    uint16_t v, t;
+    uint8_t x;
+
 
     uint8_t OAMDMA;
     Color pixels[256 * 240];
