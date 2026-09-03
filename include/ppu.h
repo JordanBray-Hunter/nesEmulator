@@ -7,6 +7,7 @@
 #define NMI_ENABLE_BIT (1 << 7 )
 #define V_BLANK_BIT (1 << 7)
 #define BG_ENABLE_BIT (1 << 3)
+#define SPRITE_ENABLE_BIT (1 << 4)
 #define VRAM_INCREMENT (1 << 3)
 
 
