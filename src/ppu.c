@@ -13,7 +13,7 @@ uint8_t ppu_vram_read(Ppu *ppu, uint16_t address)
     {
         return ppu->cartridge->chr_rom[address];
     }
-    else if (address >= 0x2000 )
+    else if (address >= 0x2000)
     {
         uint16_t base_address = address - 0x2000;
 
@@ -38,9 +38,9 @@ void ppu_vram_write(Ppu *ppu, uint16_t address, uint8_t value)
         ppu->cartridge->chr_rom[address] = value;
     }
     else if (address >= 0x1000 && address <= 0x1FFF)
-    {  
-        //Need to check if ram or rom
-         ppu->cartridge->chr_rom[address] = value;
+    {
+        // Need to check if ram or rom
+        ppu->cartridge->chr_rom[address] = value;
     }
     else if (address >= 0x2000 && address <= 0x2FFF)
     {
@@ -54,7 +54,7 @@ void ppu_vram_write(Ppu *ppu, uint16_t address, uint8_t value)
         }
         else
         {
-            // replace bit 10 with bit 11 and clear bit 11 
+            // replace bit 10 with bit 11 and clear bit 11
             ppu->v_ram[base_address & (~((1 << 10) | (1 << 11))) | ((base_address & (1 << 11)) >> 1)] = value;
         }
     }
@@ -130,14 +130,15 @@ uint8_t ppu_read(Ppu *ppu, uint16_t address)
         break;
     case 0x0002:
         data = ppu->PPUSTATUS;
+        ppu->write_toggle = 0;
         ppu->PPUSTATUS &= ~(V_BLANK_BIT);
 
         return data;
     case 0x0007:
-        
-        if(ppu->PPUADDR     )
-        
-        data = ppu->ppu_data_buffer;
+
+        if (ppu->PPUADDR)
+
+            data = ppu->ppu_data_buffer;
         return ppu->PPUDATA; // need delay fetch thing
 
     default:
@@ -154,13 +155,67 @@ void ppu_write(Ppu *ppu, uint16_t address, uint8_t value)
     {
     case 0x0000:
         ppu->PPUCTRL = value;
+        uint16_t datamask = (value & 0x03);
+        ppu->temp_vram_address &= ~(0x0C00);
+        ppu->temp_vram_address |= (datamask << 10);
+
         break;
 
     case 0x0001:
         ppu->PPUMASK = value;
         break;
+
+    case 0x0005:
+
+        if (ppu->write_toggle == 0)
+        {
+            uint16_t datamask_for_t = (value & 0xF8);
+            uint8_t datamask_for_x = (value & 0x07);
+            ppu->temp_vram_address &= ~(0x001F); // using ff instead of 3f clears all top bits including the unused 15th and sets 14th to 0
+            ppu->temp_vram_address |= (datamask_for_t >> 3);
+            ppu->fine_x = datamask_for_x;
+            ppu->write_toggle = 1;
+        }
+        else
+        {   // Names from ppu scrolling page on nes dev
+            uint16_t datamask_for_fgh = (value & 0x07);
+            uint16_t datamask_for_ab = (value & 0xC0); // seperated due to misreading doc
+            uint16_t datamask_for_cde = (value & 0x38);// seperated due to misreading doc 
+            ppu->temp_vram_address &= ~(0x73E0);
+            ppu->temp_vram_address |= (datamask_for_fgh << 12);
+            ppu->temp_vram_address |= (datamask_for_ab << 2);
+            ppu->temp_vram_address |= (datamask_for_cde << 2);
+            ppu->write_toggle = 0;
+
+        }
+
+        break;
+
+    case 0x0006:
+
+        if (ppu->write_toggle == 0)
+        {
+            uint16_t datamask = (value & 0x3F);
+            ppu->temp_vram_address &= ~(0xFF00); // using ff instead of 3f clears all top bits including the unused 15th and sets 14th to 0
+            ppu->temp_vram_address |= (datamask << 8);
+            ppu->write_toggle = 1;
+        }
+        else
+        {
+            ppu->temp_vram_address &= ~(0x00FF);
+            ppu->temp_vram_address |= value;
+            ppu->write_toggle = 0;
+
+            ppu->vram_address = ppu->temp_vram_address;
+            ppu->vram_address &= 0x7FFF; 
+        }
+
+        break;
+
     case 0x0007:
-        ppu->PPUDATA = value;
+        ppu_vram_write(ppu,ppu->vram_address,value);
+        uint16_t increment = (ppu->PPUCTRL & VRAM_INCREMENT ? 32 : 1);
+        ppu->vram_address += increment;
 
     default:
         break;
@@ -218,4 +273,67 @@ void draw_chrs_to_texture(RenderTexture2D *texture, uint8_t *chr_rom)
     }
 
     EndTextureMode();
+}
+
+
+// Debug function to print all four nametables to the standard text console
+void print_nametables_to_console(Ppu *ppu)
+{         
+ printf("\n┌─────────────────────────────────────────────────── NES NAMETABLES CONSOLE DUMP ─────────────────────────────────────────────────────┐\n");
+
+    // Loop through rows of nametables stacked vertically (Top Screen Row vs Bottom Screen Row)
+    for (int screen_row = 0; screen_row < 2; screen_row++)
+    {
+        // Each screen has 30 rows of tiles
+        for (int tile_row = 0; tile_row < 30; tile_row++)
+        {
+            printf("│ "); // Left outer border
+
+            // Loop through columns of nametables aligned horizontally (Left Screen vs Right Screen)
+            for (int screen_col = 0; screen_col < 2; screen_col++)
+            {
+                // Calculate which of the 4 nametables we are looking at (0, 1, 2, or 3)
+                int nt = (screen_row * 2) + screen_col;
+                uint16_t nt_base_address = 0x2000 + (nt * 0x0400);
+
+                // Each screen has 32 columns of tiles
+                for (int tile_col = 0; tile_col < 32; tile_col++)
+                {
+                    // Fetch tile index from your mirroring-safe VRAM reader
+                    uint16_t vram_addr = nt_base_address + (tile_row * 32) + tile_col;
+                    uint8_t tile_index = ppu_vram_read(ppu, vram_addr);
+
+                    // FIXED: Empty spaces must be 2 characters wide to match %02X formatting
+                    if (tile_index == 0x00 || tile_index == 0x20) 
+                    {
+                        printf("  "); 
+                    }
+                    // ALTERNATIVE: If your font map maps ASCII directly (0x30='0', 0x41='A', etc.)
+                    // and you'd rather read text than hex codes, uncomment the lines below:
+                    /*
+                    else if (tile_index >= 0x20 && tile_index <= 0x7E)
+                    {
+                        printf("%c ", tile_index); // Character + trailing space for alignment
+                    }
+                    */
+                    else 
+                    {
+                        printf("%02X", tile_index); 
+                    }
+                }
+
+                // Print a clean visual divider between the Left and Right screen layouts
+                if (screen_col == 0) printf(" │ ");
+            }
+
+            printf(" │\n"); // Right outer border and newline
+        }
+
+        // Print a visual horizontal divider between the Top and Bottom screen layouts
+        if (screen_row == 0) 
+        {
+            printf("├──────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────┤\n");
+        }
+    }
+    printf("└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘\n\n");
 }

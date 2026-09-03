@@ -7,6 +7,8 @@
 #define NMI_ENABLE_BIT (1 << 7 )
 #define V_BLANK_BIT (1 << 7)
 #define BG_ENABLE_BIT (1 << 3)
+#define VRAM_INCREMENT (1 << 3)
+
 
 typedef struct ppu
 {
@@ -25,8 +27,8 @@ typedef struct ppu
     uint8_t ppu_data_buffer;
 
     // internal reg
-    uint16_t v, t;
-    uint8_t x;
+    uint16_t vram_address, temp_vram_address;
+    uint8_t fine_x;
 
 
     uint8_t OAMDMA;
@@ -49,6 +51,9 @@ void ppu_clock(Ppu *ppu);
 
 
 void draw_chrs_to_texture(RenderTexture2D *texture, uint8_t *chr_rom);
+
+//Google ai made this. 
+void print_nametables_to_console(Ppu *ppu);
 
 
 uint8_t ppu_read(Ppu *ppu, uint16_t address);

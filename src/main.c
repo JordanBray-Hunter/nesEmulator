@@ -59,6 +59,9 @@ printf("Byte at internal PRG index [32765] ($FFFD): 0x%02X\n", cartridge.prg_rom
         {
             ppu.PPUMASK ^= BG_ENABLE_BIT;
         }
+        if (IsKeyPressed(KEY_D)){
+            print_nametables_to_console(&ppu);
+        }
 
         
         while (!ppu.frame_ready)
