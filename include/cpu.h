@@ -17,10 +17,15 @@
 #define RESET_VECTOR_ADDRESS_HIGH 0xFFFD
 
 
+typedef struct bus Bus;
+
+
 typedef struct cpu
 {
     uint8_t x, y , a , p, sp;
     uint16_t pc; 
+
+    bool nmi_waiting;
     Bus* bus;
 
     uint8_t cycles_remaining;

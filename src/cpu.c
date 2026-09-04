@@ -64,7 +64,7 @@ void cpu_init(Cpu *cpu, Bus *bus)
 
 void cpu_clock(Cpu *cpu)
 {
-    //printf("cycles remaining: %d \n ", cpu->cycles_remaining);
+    // printf("cycles remaining: %d \n ", cpu->cycles_remaining);
 
     if (cpu->cycles_remaining != 0)
     {
@@ -72,10 +72,38 @@ void cpu_clock(Cpu *cpu)
         return;
     }
 
+    if (cpu->nmi_waiting)
+    {
+        bus_write(cpu->bus, 0x0100 + cpu->sp, (cpu->pc >> 8) & 0xFF);
+        cpu->sp--;
+        bus_write(cpu->bus, 0x0100 + cpu->sp, cpu->pc & 0xFF);
+        cpu->sp--;
+
+         uint8_t status_to_push = (cpu->p | 0x20) & ~0x10;
+        bus_write(cpu->bus, 0x0100 + cpu->sp, status_to_push);
+        cpu->sp--;
+
+        cpu->p |= I_DISABLE_BIT;
+
+        uint8_t low = bus_read(cpu->bus, 0xFFFA);
+        uint8_t high = bus_read(cpu->bus, 0xFFFB);
+        cpu->pc = ((uint16_t)high << 8) | low;
+
+        cpu->nmi_waiting = false;
+        cpu->cycles_remaining = 7;
+        return;
+    }
+
     uint8_t opcode = bus_read(cpu->bus, cpu->pc++);
 
     //printf("current opcode: %d \n ", opcode);
     Instruction instruction = opcodes[opcode];
+
+    if (instruction.opcode_func == NULL)
+{
+    printf("UNIMPLEMENTED OPCODE: $%02X at PC=$%04X\n", opcode, cpu->pc - 1);
+    exit(1);
+}
 
     cpu->cycles_remaining = instruction.cycles - 1;
     instruction.opcode_func(cpu);

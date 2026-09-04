@@ -662,7 +662,6 @@ void return_from_interrupt(Cpu *cpu)
     flags = (flags & ~B_BIT) | U_BIT;
     cpu->p = flags;
 
-
     cpu->sp++;
     uint8_t low = bus_read(cpu->bus, 0x0100 + cpu->sp);
     cpu->sp++;
@@ -1221,6 +1220,307 @@ void decrement_y(Cpu *cpu)
     update_zn_flags(cpu, cpu->y);
 }
 
+// Arithmetic Shift Left
+
+void shift_left_acc(Cpu *cpu)
+{
+    cpu->p &= ~C_BIT;
+    cpu->p |= (cpu->a & 0x80) ? C_BIT : 0;
+
+    cpu->a <<= 1;
+
+    update_zn_flags(cpu, cpu->a);
+}
+void shift_left_zp(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x80) ? C_BIT : 0;
+
+    value <<= 1;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void shift_left_zp_x(Cpu *cpu)
+{
+
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    address += cpu->x;
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x80) ? C_BIT : 0;
+
+    value <<= 1;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void shift_left_abs(Cpu *cpu)
+{
+    uint8_t address = addr_abs(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x80) ? C_BIT : 0;
+
+    value <<= 1;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void shift_left_abs_x(Cpu *cpu)
+{
+    uint8_t address = addr_abs_x(cpu, false);
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x80) ? C_BIT : 0;
+
+    value <<= 1;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+
+// Logical Shift Right
+
+void shift_right_acc(Cpu *cpu)
+{
+    cpu->p &= ~C_BIT;
+    cpu->p |= (cpu->a & 0x01) ? C_BIT : 0;
+
+    cpu->a >>= 1;
+
+    update_zn_flags(cpu, cpu->a);
+}
+void shift_right_zp(Cpu *cpu)
+{
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x01) ? C_BIT : 0;
+
+    value >>= 1;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void shift_right_zp_x(Cpu *cpu)
+{
+
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    address += cpu->x;
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x01) ? C_BIT : 0;
+
+    value >>= 1;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void shift_right_abs(Cpu *cpu)
+{
+    uint8_t address = addr_abs(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x01) ? C_BIT : 0;
+
+    value >>= 1;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void shift_right_abs_x(Cpu *cpu)
+{
+    uint8_t address = addr_abs_x(cpu, false);
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x01) ? C_BIT : 0;
+
+    value >>= 1;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+
+// Rotate Left
+
+void rotate_left_acc(Cpu *cpu)
+{
+    uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
+    cpu->p &= ~C_BIT;
+    cpu->p |= (cpu->a & 0x80) ? C_BIT : 0;
+
+    cpu->a <<= 1;
+    cpu->a |= carry_in;
+
+    update_zn_flags(cpu, cpu->a);
+}
+void rotate_left_zp(Cpu *cpu)
+{
+    uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x80) ? C_BIT : 0;
+
+    value <<= 1;
+    value |= carry_in;
+
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void rotate_left_zp_x(Cpu *cpu)
+{
+    uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    address += cpu->x;
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x80) ? C_BIT : 0;
+
+    value <<= 1;
+    value |= carry_in;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void rotate_left_abs(Cpu *cpu)
+{
+    uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
+    uint8_t address = addr_abs(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x80) ? C_BIT : 0;
+
+    value <<= 1;
+    value |= carry_in;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void rotate_left_abs_x(Cpu *cpu)
+{
+    uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
+    uint8_t address = addr_abs_x(cpu, false);
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x80) ? C_BIT : 0;
+
+    value <<= 1;
+    value |= carry_in;
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+
+//  Rotate Right
+
+void rotate_right_acc(Cpu *cpu)
+{
+    uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
+    cpu->p &= ~C_BIT;
+    cpu->p |= (cpu->a & 0x01) ? C_BIT : 0;
+
+    cpu->a >>= 1;
+    cpu->a |= (carry_in << 7);
+
+    update_zn_flags(cpu, cpu->a);
+}
+void rotate_right_zp(Cpu *cpu)
+{
+    uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x01) ? C_BIT : 0;
+
+    value >>= 1;
+    value |= (carry_in << 7);
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void rotate_right_zp_x(Cpu *cpu)
+{
+    uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
+    uint8_t address = bus_read(cpu->bus, cpu->pc++);
+    address += cpu->x;
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x01) ? C_BIT : 0;
+
+    value >>= 1;
+    value |= (carry_in << 7);
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void rotate_right_abs(Cpu *cpu)
+{
+    uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
+    uint8_t address = addr_abs(cpu);
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x01) ? C_BIT : 0;
+
+    value >>= 1;
+
+    value |= (carry_in << 7);
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+void rotate_right_abs_x(Cpu *cpu)
+{
+    uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
+    uint8_t address = addr_abs_x(cpu, false);
+    uint8_t value = bus_read(cpu->bus, address);
+
+    bus_write(cpu->bus, address, value);
+
+    cpu->p &= ~C_BIT;
+    cpu->p |= (value & 0x01) ? C_BIT : 0;
+
+    value >>= 1;
+
+    value |= (carry_in << 7);
+    bus_write(cpu->bus, address, value);
+    update_zn_flags(cpu, value);
+}
+
 Instruction opcodes[256] = {
 
     // NOP
@@ -1319,8 +1619,8 @@ Instruction opcodes[256] = {
     [0x6C] = {&jump_ind, 5},
     [0x20] = {&jump_to_sub, 6},
     [0x60] = {&return_from_sub, 6},
-    [0x00] = {&break_irq,7},
-    [0x40] = {&return_from_interrupt,6},
+    [0x00] = {&break_irq, 7},
+    [0x40] = {&return_from_interrupt, 6},
 
     // Compare A
 
@@ -1407,5 +1707,33 @@ Instruction opcodes[256] = {
     [0xDE] = {&decrement_memory_abs_x, 7},
     [0xCA] = {&decrement_x, 2},
     [0x88] = {&decrement_y, 2},
+
+    // SHIFT LEFT
+    [0x0A] = {&shift_left_acc, 2},
+    [0x06] = {&shift_left_zp, 5},
+    [0x16] = {&shift_left_zp_x, 6},
+    [0x0E] = {&shift_left_abs, 6},
+    [0x1E] = {&shift_left_abs_x, 7},
+
+    // SHIFT RIGHT
+    [0x4A] = {&shift_right_acc, 2},
+    [0x46] = {&shift_right_zp, 5},
+    [0x56] = {&shift_right_zp_x, 6},
+    [0x4E] = {&shift_right_abs, 6},
+    [0x5E] = {&shift_right_abs_x, 7},
+
+    // Rotate LEFT
+    [0x2A] = {&rotate_left_acc, 2},
+    [0x26] = {&rotate_left_zp, 5},
+    [0x36] = {&rotate_left_zp_x, 6},
+    [0x2E] = {&rotate_left_abs, 6},
+    [0x3E] = {&rotate_left_abs_x, 7},
+
+    // rotate RIGHT
+    [0x6A] = {&rotate_right_acc, 2},
+    [0x66] = {&rotate_right_zp, 5},
+    [0x76] = {&rotate_right_zp_x, 6},
+    [0x6E] = {&rotate_right_abs, 6},
+    [0x7E] = {&rotate_right_abs_x, 7},
 
 };

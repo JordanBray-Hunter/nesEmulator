@@ -242,6 +242,40 @@ void bitwise_xor_abs_y(Cpu *cpu);
 void bitwise_xor_ind_x_pre(Cpu *cpu);
 void bitwise_xor_ind_y_post(Cpu *cpu);
 
+// Arithmetic Shift Left
+
+void shift_left_acc(Cpu *cpu);
+void shift_left_zp(Cpu *cpu);
+void shift_left_zp_x(Cpu *cpu);
+void shift_left_abs(Cpu *cpu);
+void shift_left_abs_x(Cpu *cpu);
+
+// Logical Shift Right
+
+void shift_right_acc(Cpu *cpu);
+void shift_right_zp(Cpu *cpu);
+void shift_right_zp_x(Cpu *cpu);
+void shift_right_abs(Cpu *cpu);
+void shift_right_abs_x(Cpu *cpu);
+
+//  Rotate Left
+
+void rotate_left_acc(Cpu *cpu);
+void rotate_left_zp(Cpu *cpu);
+void rotate_left_zp_x(Cpu *cpu);
+void rotate_left_abs(Cpu *cpu);
+void rotate_left_abs_x(Cpu *cpu);
+
+// Rotate Right
+
+void rotate_right_acc(Cpu *cpu);
+void rotate_right_zp(Cpu *cpu);
+void rotate_right_zp_x(Cpu *cpu);
+void rotate_right_abs(Cpu *cpu);
+void rotate_right_abs_x(Cpu *cpu);
+
+
+
 // Bit Test
 
 void bit_test_zp(Cpu *cpu);

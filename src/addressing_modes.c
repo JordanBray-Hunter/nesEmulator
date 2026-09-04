@@ -18,7 +18,7 @@ uint16_t addr_abs(Cpu *cpu){
 }
 
 
-uint16_t addr_ind_y_post(Cpu *cpu,bool is_reading)
+uint16_t addr_ind_y_post(Cpu *cpu,bool can_add_extra_cycle)
 {
     uint8_t value = bus_read(cpu->bus, cpu->pc++);
     uint8_t low = bus_read(cpu->bus, value);
@@ -26,20 +26,20 @@ uint16_t addr_ind_y_post(Cpu *cpu,bool is_reading)
     uint8_t high = bus_read(cpu->bus, value);
     uint16_t address = (high << 8) | low;
     address += cpu->y;
-    if (is_reading && ((high << 8) != (address & 0xFF00)))
+    if (can_add_extra_cycle && ((high << 8) != (address & 0xFF00)))
     {
         cpu->cycles_remaining++;
     };
     return address;
 }
 
-uint16_t addr_abs_x(Cpu *cpu,bool is_reading){
+uint16_t addr_abs_x(Cpu *cpu,bool can_add_extra_cycle){
     uint16_t low = bus_read(cpu->bus, cpu->pc++);
     uint16_t high = bus_read(cpu->bus, cpu->pc++);
     uint16_t address = (high << 8) | low;
     address += cpu->x;
 
- if (is_reading && ((high << 8) != (address & 0xFF00)))
+ if (can_add_extra_cycle && ((high << 8) != (address & 0xFF00)))
     {
         cpu->cycles_remaining++;
     };
@@ -49,14 +49,14 @@ uint16_t addr_abs_x(Cpu *cpu,bool is_reading){
 
 
 
-uint16_t addr_abs_y(Cpu *cpu,bool is_reading){
+uint16_t addr_abs_y(Cpu *cpu,bool can_add_extra_cycle){
 
      uint16_t low = bus_read(cpu->bus, cpu->pc++);
     uint16_t high = bus_read(cpu->bus, cpu->pc++);
     uint16_t address = (high << 8) | low;
     address += cpu->y;
 
- if (is_reading && ((high << 8) != (address & 0xFF00)))
+ if (can_add_extra_cycle && ((high << 8) != (address & 0xFF00)))
     {
         cpu->cycles_remaining++;
     };

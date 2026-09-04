@@ -26,10 +26,9 @@ int main(int argc, char **argv)
     bool loaded = cartridge_load(&cartridge, argv[1]);
 
     printf("=== PRG VECTOR INTEGRITY CHECK ===\n");
-printf("PRG Size Loaded: %d bytes\n", cartridge.prg_size);
-printf("Byte at internal PRG index [32764] ($FFFC): 0x%02X\n", cartridge.prg_rom[32764]);
-printf("Byte at internal PRG index [32765] ($FFFD): 0x%02X\n", cartridge.prg_rom[32765]);
-
+    printf("PRG Size Loaded: %d bytes\n", cartridge.prg_size);
+    printf("Byte at internal PRG index [32764] ($FFFC): 0x%02X\n", cartridge.prg_rom[32764]);
+    printf("Byte at internal PRG index [32765] ($FFFD): 0x%02X\n", cartridge.prg_rom[32765]);
 
     bool show_tiles = false;
 
@@ -41,7 +40,7 @@ printf("Byte at internal PRG index [32765] ($FFFD): 0x%02X\n", cartridge.prg_rom
 
     bus_init(&bus, &cartridge, &ppu);
     cpu_init(&cpu, &bus);
-    ppu_init(&ppu, &cartridge);
+    ppu_init(&ppu, &cartridge, &cpu);
 
     SetTargetFPS(60);
 
@@ -59,11 +58,30 @@ printf("Byte at internal PRG index [32765] ($FFFD): 0x%02X\n", cartridge.prg_rom
         {
             ppu.PPUMASK ^= BG_ENABLE_BIT;
         }
-        if (IsKeyPressed(KEY_D)){
+        if (IsKeyPressed(KEY_D))
+        {
             print_nametables_to_console(&ppu);
         }
+        if (IsKeyPressed(KEY_C))
+        {
+            printf("=== ppu_vram_read CHR sanity check ===\n");
+            for (int tile = 0; tile < 10; tile++)
+            {
+                uint16_t addr_lsb = (tile << 4);
+                uint16_t addr_msb = (tile << 4) | 0x8;
 
-        
+                uint8_t direct_lsb = cartridge.chr_rom[addr_lsb]; // known-good, straight from your CHR viewer's method
+                uint8_t direct_msb = cartridge.chr_rom[addr_msb];
+
+                uint8_t via_read_lsb = ppu_vram_read(&ppu, addr_lsb);
+                uint8_t via_read_msb = ppu_vram_read(&ppu, addr_msb);
+
+                printf("tile %d: direct_lsb=%02X via_read_lsb=%02X | direct_msb=%02X via_read_msb=%02X %s\n",
+                       tile, direct_lsb, via_read_lsb, direct_msb, via_read_msb,
+                       (direct_lsb == via_read_lsb && direct_msb == via_read_msb) ? "OK" : "MISMATCH");
+            }
+        }
+
         while (!ppu.frame_ready)
         {
             cpu_clock(&cpu);
@@ -72,10 +90,10 @@ printf("Byte at internal PRG index [32765] ($FFFD): 0x%02X\n", cartridge.prg_rom
             ppu_clock(&ppu);
         }
 
-        UpdateTexture(ppu.gameTexture.texture,ppu.pixels);
+        UpdateTexture(ppu.gameTexture.texture, ppu.pixels);
         BeginDrawing();
         ClearBackground(WHITE);
-        ppu.frame_ready = false;   
+        ppu.frame_ready = false;
 
         if (show_tiles)
         {
@@ -87,7 +105,7 @@ printf("Byte at internal PRG index [32765] ($FFFD): 0x%02X\n", cartridge.prg_rom
         }
         else
         {
-            Rectangle source = {0, 0, (float)ppu.gameTexture.texture.width, -(float)ppu.gameTexture.texture.height};
+            Rectangle source = {0, 0, (float)ppu.gameTexture.texture.width, (float)ppu.gameTexture.texture.height};
             Rectangle dest = {0, 0, (float)ppu.gameTexture.texture.width * scale, (float)ppu.gameTexture.texture.height * scale};
             Vector2 origin = {0, 0};
 

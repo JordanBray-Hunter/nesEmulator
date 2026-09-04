@@ -5,6 +5,8 @@
 
 #define RAM_SIZE 2048
 
+typedef struct ppu Ppu;
+
 typedef struct bus {
     uint8_t ram[RAM_SIZE];
     Cartridge* cartridge;
