@@ -1263,7 +1263,7 @@ void shift_left_zp_x(Cpu *cpu)
 }
 void shift_left_abs(Cpu *cpu)
 {
-    uint8_t address = addr_abs(cpu);
+    uint16_t address = addr_abs(cpu);
     uint8_t value = bus_read(cpu->bus, address);
 
     bus_write(cpu->bus, address, value);
@@ -1277,7 +1277,7 @@ void shift_left_abs(Cpu *cpu)
 }
 void shift_left_abs_x(Cpu *cpu)
 {
-    uint8_t address = addr_abs_x(cpu, false);
+    uint16_t address = addr_abs_x(cpu, false);
     uint8_t value = bus_read(cpu->bus, address);
 
     bus_write(cpu->bus, address, value);
@@ -1333,7 +1333,7 @@ void shift_right_zp_x(Cpu *cpu)
 }
 void shift_right_abs(Cpu *cpu)
 {
-    uint8_t address = addr_abs(cpu);
+    uint16_t address = addr_abs(cpu);
     uint8_t value = bus_read(cpu->bus, address);
 
     bus_write(cpu->bus, address, value);
@@ -1347,7 +1347,7 @@ void shift_right_abs(Cpu *cpu)
 }
 void shift_right_abs_x(Cpu *cpu)
 {
-    uint8_t address = addr_abs_x(cpu, false);
+    uint16_t address = addr_abs_x(cpu, false);
     uint8_t value = bus_read(cpu->bus, address);
 
     bus_write(cpu->bus, address, value);
@@ -1410,7 +1410,7 @@ void rotate_left_zp_x(Cpu *cpu)
 void rotate_left_abs(Cpu *cpu)
 {
     uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
-    uint8_t address = addr_abs(cpu);
+    uint16_t address = addr_abs(cpu);
     uint8_t value = bus_read(cpu->bus, address);
 
     bus_write(cpu->bus, address, value);
@@ -1426,7 +1426,7 @@ void rotate_left_abs(Cpu *cpu)
 void rotate_left_abs_x(Cpu *cpu)
 {
     uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
-    uint8_t address = addr_abs_x(cpu, false);
+    uint16_t address = addr_abs_x(cpu, false);
     uint8_t value = bus_read(cpu->bus, address);
 
     bus_write(cpu->bus, address, value);
@@ -1489,7 +1489,7 @@ void rotate_right_zp_x(Cpu *cpu)
 void rotate_right_abs(Cpu *cpu)
 {
     uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
-    uint8_t address = addr_abs(cpu);
+    uint16_t address = addr_abs(cpu);
     uint8_t value = bus_read(cpu->bus, address);
 
     bus_write(cpu->bus, address, value);
@@ -1506,7 +1506,7 @@ void rotate_right_abs(Cpu *cpu)
 void rotate_right_abs_x(Cpu *cpu)
 {
     uint8_t carry_in = (cpu->p & C_BIT ? 1 : 0);
-    uint8_t address = addr_abs_x(cpu, false);
+    uint16_t address = addr_abs_x(cpu, false);
     uint8_t value = bus_read(cpu->bus, address);
 
     bus_write(cpu->bus, address, value);

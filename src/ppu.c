@@ -8,17 +8,18 @@
 // Based of sudo code from https://www.nesdev.org/wiki/PPU_scrolling#PPU_internal_registers
 void course_x_increment(Ppu *ppu)
 {
-    if ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT)){
-    if ((ppu->vram_address & 0x001F) == 31)
+    if ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT))
     {
-        ppu->vram_address &= ~(0x001F);
-        ppu->vram_address ^= 0x0400;
+        if ((ppu->vram_address & 0x001F) == 31)
+        {
+            ppu->vram_address &= ~(0x001F);
+            ppu->vram_address ^= 0x0400;
+        }
+        else
+        {
+            ppu->vram_address++;
+        }
     }
-    else
-    {
-        ppu->vram_address++;
-    }
-}
 }
 
 void copy_horizontal_bits(Ppu *ppu)
@@ -46,31 +47,32 @@ void copy_vertical_bits(Ppu *ppu)
 // Based of sudo code from https://www.nesdev.org/wiki/PPU_scrolling#PPU_internal_registers
 void y_increment(Ppu *ppu)
 {
-    if ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT)){
-    if ((ppu->vram_address & 0x7000) != 0x7000)
+    if ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT))
     {
-        ppu->vram_address += 0x1000;
-    }
-    else
-    {
-        ppu->vram_address &= ~0x7000;
-        int y = (ppu->vram_address & 0x03E0) >> 5;
-        if (y == 29)
+        if ((ppu->vram_address & 0x7000) != 0x7000)
         {
-            y = 0;
-            ppu->vram_address ^= 0x0800;
-        }
-        else if (y == 31)
-        {
-            y = 0;
+            ppu->vram_address += 0x1000;
         }
         else
         {
-            y += 1;
+            ppu->vram_address &= ~0x7000;
+            int y = (ppu->vram_address & 0x03E0) >> 5;
+            if (y == 29)
+            {
+                y = 0;
+                ppu->vram_address ^= 0x0800;
+            }
+            else if (y == 31)
+            {
+                y = 0;
+            }
+            else
+            {
+                y += 1;
+            }
+            ppu->vram_address = (ppu->vram_address & ~0x03E0) | (y << 5);
         }
-        ppu->vram_address = (ppu->vram_address & ~0x03E0) | (y << 5);
     }
-}
 }
 
 void load_shift_registers(Ppu *ppu)
@@ -78,9 +80,9 @@ void load_shift_registers(Ppu *ppu)
 
     ppu->shift_register_lsb_plane = ((ppu->shift_register_lsb_plane & 0xFF00) | ppu->next_lsb_plane);
     ppu->shift_register_msb_plane = ((ppu->shift_register_msb_plane & 0xFF00) | ppu->next_msb_plane);
-    ppu->shift_register_attrbute_lsb = ((ppu->shift_register_attrbute_lsb & 0xFF00) | 0xFF);
+    ppu->shift_register_attrbute_lsb = ((ppu->shift_register_attrbute_lsb & 0xFF00) | ((ppu->next_nametable_attr & 0b01) ? 0xFF : 0x00));
     ;
-    ppu->shift_register_attrbute_msb = ((ppu->shift_register_attrbute_lsb & 0xFF00) | 0xFF);
+    ppu->shift_register_attrbute_msb = ((ppu->shift_register_attrbute_msb & 0xFF00) | ((ppu->next_nametable_attr & 0b10) ? 0xFF : 0x00));
     ;
 }
 
@@ -95,7 +97,7 @@ void shift_registers(Ppu *ppu)
 
 uint8_t ppu_vram_read(Ppu *ppu, uint16_t address)
 {
-
+    
     if (address >= 0x0000 && address <= 0x0FFF)
     {
         return ppu->cartridge->chr_rom[address];
@@ -117,7 +119,7 @@ uint8_t ppu_vram_read(Ppu *ppu, uint16_t address)
         else
         {
             // ignore bit 10 to map horiz
-            return ppu->v_ram[base_address & (~(1 << 10))];
+            return ppu->v_ram[(base_address & (~((1 << 10) | (1 << 11)))) | ((base_address & (1 << 11)) >> 1)];
         }
     }
     else if (address >= 0x3F00 && address <= 0x3FFF)
@@ -135,6 +137,7 @@ uint8_t ppu_vram_read(Ppu *ppu, uint16_t address)
 
 void ppu_vram_write(Ppu *ppu, uint16_t address, uint8_t value)
 {
+    printf("[VRAM WRITE] addr=%04X value=%02X\n", address, value);
     if (address >= 0x0000 && address <= 0x0FFF)
     {
         ppu->cartridge->chr_rom[address] = value;
@@ -168,6 +171,7 @@ void ppu_vram_write(Ppu *ppu, uint16_t address, uint8_t value)
         {
             base_address -= 0x0010;
         }
+        printf("PALETTE WRITE: addr=%04X base=%02X value=%02X\n", address, base_address, value);
         ppu->palette_ram[base_address] = value;
 
         return;
@@ -186,16 +190,26 @@ void ppu_init(Ppu *ppu, Cartridge *cartridge, Cpu *cpu)
     ppu->scan_line = 0;
 }
 
+Color get_color_from_pallet(Ppu *ppu, uint8_t palette, uint8_t pixel)
+{
+
+    return colors[ppu_vram_read(ppu, (0x3F00) + (palette << 2) + pixel) & 0x3F];
+}
+
 Color palette[4] = {BLACK, RED, GREEN, BLUE};
 
 void ppu_clock(Ppu *ppu)
 {
     // if (ppu->dot == 100 && ppu->scan_line == 50) printf("fine_x=%d\n", ppu->fine_x);
-
+    if (ppu->scan_line == 0 && ppu->dot == 0)
+		{
+			// "Odd Frame" cycle skip
+			ppu->dot = 1;
+		}
     if ((ppu->scan_line < 240 || ppu->scan_line == 261))
     {
 
-                if (ppu->dot >= 1 && ppu->dot <= 336)
+        if (ppu->dot >= 1 && ppu->dot <= 336)
         {
             shift_registers(ppu);
         }
@@ -204,7 +218,7 @@ void ppu_clock(Ppu *ppu)
         {
             // printf("cycle value:%d \n",(ppu->dot - 1) % 8);
             //  SIMILAR TO JTHIGN
-            //shift_registers(ppu);
+            // shift_registers(ppu);
 
             switch ((ppu->dot - 1) % 8)
             {
@@ -282,16 +296,24 @@ void ppu_clock(Ppu *ppu)
             uint8_t p0_pixel = (ppu->shift_register_lsb_plane & bit_mux) > 0;
             uint8_t p1_pixel = (ppu->shift_register_msb_plane & bit_mux) > 0;
 
+            uint8_t p0_palette = (ppu->shift_register_attrbute_lsb & bit_mux) > 0;
+            uint8_t p1_palette = (ppu->shift_register_attrbute_msb & bit_mux) > 0;
+
+            bg_palette = (p1_palette << 1) | p0_palette;
+
             // Combine to form pixel index
             bg_pixel = (p1_pixel << 1) | p0_pixel;
+
+            // if(bg_palette != 0 && bg_pixel != 0){
             // printf("pixel: %d\n",bg_pixel);
-            ppu->pixels[ppu->scan_line * 256 + ppu->dot] = palette[bg_pixel];
+            // printf("pallet: %d\n",bg_palette);}
+            ppu->pixels[ppu->scan_line * 256 + ppu->dot] = get_color_from_pallet(ppu, bg_palette, bg_pixel); // palette[bg_pixel]; //
         }
         else
         {
             ppu->pixels[ppu->scan_line * 256 + ppu->dot] = WHITE;
         }
-    } 
+    }
     if (ppu->scan_line == 261 && ppu->dot == 1)
     {
         ppu->PPUSTATUS &= ~(V_BLANK_BIT);
@@ -305,7 +327,7 @@ void ppu_clock(Ppu *ppu)
 
     if (ppu->dot == 257)
     {
-        //load_shift_registers(ppu);
+        // load_shift_registers(ppu);
         copy_horizontal_bits(ppu);
     }
 
@@ -351,7 +373,8 @@ uint8_t ppu_read(Ppu *ppu, uint16_t address)
     case 0x0001:
         break;
     case 0x0002:
-        data = ppu->PPUSTATUS;
+        data = ppu->PPUSTATUS | (ppu->ppu_data_buffer & 0x1F);
+
         ppu->write_toggle = 0;
         ppu->PPUSTATUS &= ~(V_BLANK_BIT);
 
@@ -440,10 +463,11 @@ void ppu_write(Ppu *ppu, uint16_t address, uint8_t value)
         break;
 
     case 0x0007:
+
         ppu_vram_write(ppu, ppu->vram_address, value);
         uint16_t increment = (ppu->PPUCTRL & VRAM_INCREMENT ? 32 : 1);
         ppu->vram_address += increment;
-
+        // printf("VRAM ADDRESS SET: %04X\n", ppu->vram_address); // ADD THIS
     default:
         break;
     };
@@ -564,3 +588,75 @@ void print_nametables_to_console(Ppu *ppu)
     }
     printf("└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘\n\n");
 }
+
+Color colors[64] = {
+    // converted via claude from https://github.com/OneLoneCoder/olcNES/blob/master/Part%20%234%20-%20PPU%20Backgrounds/olc2C02.cpp#L246
+    [0x00] = {84, 84, 84, 255},
+    [0x01] = {0, 30, 116, 255},
+    [0x02] = {8, 16, 144, 255},
+    [0x03] = {48, 0, 136, 255},
+    [0x04] = {68, 0, 100, 255},
+    [0x05] = {92, 0, 48, 255},
+    [0x06] = {84, 4, 0, 255},
+    [0x07] = {60, 24, 0, 255},
+    [0x08] = {32, 42, 0, 255},
+    [0x09] = {8, 58, 0, 255},
+    [0x0A] = {0, 64, 0, 255},
+    [0x0B] = {0, 60, 0, 255},
+    [0x0C] = {0, 50, 60, 255},
+    [0x0D] = {0, 0, 0, 255},
+    [0x0E] = {0, 0, 0, 255},
+    [0x0F] = {0, 0, 0, 255},
+
+    [0x10] = {152, 150, 152, 255},
+    [0x11] = {8, 76, 196, 255},
+    [0x12] = {48, 50, 236, 255},
+    [0x13] = {92, 30, 228, 255},
+    [0x14] = {136, 20, 176, 255},
+    [0x15] = {160, 20, 100, 255},
+    [0x16] = {152, 34, 32, 255},
+    [0x17] = {120, 60, 0, 255},
+    [0x18] = {84, 90, 0, 255},
+    [0x19] = {40, 114, 0, 255},
+    [0x1A] = {8, 124, 0, 255},
+    [0x1B] = {0, 118, 40, 255},
+    [0x1C] = {0, 102, 120, 255},
+    [0x1D] = {0, 0, 0, 255},
+    [0x1E] = {0, 0, 0, 255},
+    [0x1F] = {0, 0, 0, 255},
+
+    [0x20] = {236, 238, 236, 255},
+    [0x21] = {76, 154, 236, 255},
+    [0x22] = {120, 124, 236, 255},
+    [0x23] = {176, 98, 236, 255},
+    [0x24] = {228, 84, 236, 255},
+    [0x25] = {236, 88, 180, 255},
+    [0x26] = {236, 106, 100, 255},
+    [0x27] = {212, 136, 32, 255},
+    [0x28] = {160, 170, 0, 255},
+    [0x29] = {116, 196, 0, 255},
+    [0x2A] = {76, 208, 32, 255},
+    [0x2B] = {56, 204, 108, 255},
+    [0x2C] = {56, 180, 204, 255},
+    [0x2D] = {60, 60, 60, 255},
+    [0x2E] = {0, 0, 0, 255},
+    [0x2F] = {0, 0, 0, 255},
+
+    [0x30] = {236, 238, 236, 255},
+    [0x31] = {168, 204, 236, 255},
+    [0x32] = {188, 188, 236, 255},
+    [0x33] = {212, 178, 236, 255},
+    [0x34] = {236, 174, 236, 255},
+    [0x35] = {236, 174, 212, 255},
+    [0x36] = {236, 180, 176, 255},
+    [0x37] = {228, 196, 144, 255},
+    [0x38] = {204, 210, 120, 255},
+    [0x39] = {180, 222, 120, 255},
+    [0x3A] = {168, 226, 144, 255},
+    [0x3B] = {152, 226, 180, 255},
+    [0x3C] = {160, 214, 228, 255},
+    [0x3D] = {160, 162, 160, 255},
+    [0x3E] = {0, 0, 0, 255},
+    [0x3F] = {0, 0, 0, 255},
+
+};
