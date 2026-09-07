@@ -12,6 +12,9 @@ void update_zn_flags(Cpu *cpu, uint8_t value)
     cpu->p |= (value == 0 ? Z_BIT : 0);
 }
 
+
+
+
 void update_alu_flags(Cpu *cpu, uint8_t accumulator, uint8_t value, uint16_t result)
 {
 

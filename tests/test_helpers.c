@@ -19,7 +19,7 @@ void make_test_system(TestSystem *sys) {
     sys->cartridge.chr_size = 0x2000;
     sys->cartridge.chr_rom = calloc(sys->cartridge.chr_size, sizeof(uint8_t));
 
-    bus_init(&sys->bus, &sys->cartridge, &sys->ppu);
+    bus_init(&sys->bus, &sys->cartridge, &sys->ppu, NULL);
 
     sys->cartridge.prg_rom[RESET_VECTOR_ADDRESS_LOW - 0x8000] = 0x00;
     sys->cartridge.prg_rom[RESET_VECTOR_ADDRESS_HIGH - 0x8000] = 0x80; // PC = 0x8000

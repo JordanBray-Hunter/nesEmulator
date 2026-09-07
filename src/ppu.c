@@ -137,7 +137,7 @@ uint8_t ppu_vram_read(Ppu *ppu, uint16_t address)
 
 void ppu_vram_write(Ppu *ppu, uint16_t address, uint8_t value)
 {
-    printf("[VRAM WRITE] addr=%04X value=%02X\n", address, value);
+    //printf("[VRAM WRITE] addr=%04X value=%02X\n", address, value);
     if (address >= 0x0000 && address <= 0x0FFF)
     {
         ppu->cartridge->chr_rom[address] = value;
@@ -171,7 +171,7 @@ void ppu_vram_write(Ppu *ppu, uint16_t address, uint8_t value)
         {
             base_address -= 0x0010;
         }
-        printf("PALETTE WRITE: addr=%04X base=%02X value=%02X\n", address, base_address, value);
+       // printf("PALETTE WRITE: addr=%04X base=%02X value=%02X\n", address, base_address, value);
         ppu->palette_ram[base_address] = value;
 
         return;
@@ -186,6 +186,9 @@ void ppu_init(Ppu *ppu, Cartridge *cartridge, Cpu *cpu)
 
     ppu->PPUCTRL = 0;
     ppu->PPUMASK = 0;
+    ppu->vram_address = 0;
+    ppu->temp_vram_address = 0;
+    ppu->PPUSTATUS = 0b10100000;
     ppu->dot = 0;
     ppu->scan_line = 0;
 }
@@ -201,7 +204,7 @@ Color palette[4] = {BLACK, RED, GREEN, BLUE};
 void ppu_clock(Ppu *ppu)
 {
     // if (ppu->dot == 100 && ppu->scan_line == 50) printf("fine_x=%d\n", ppu->fine_x);
-    if (ppu->scan_line == 0 && ppu->dot == 0)
+    if (ppu->scan_line == 0 && ppu->odd_frame && ppu->dot == 0 && ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT)))
 		{
 			// "Odd Frame" cycle skip
 			ppu->dot = 1;
@@ -355,6 +358,7 @@ void ppu_clock(Ppu *ppu)
 
         if (ppu->scan_line >= 262)
         {
+            ppu->odd_frame = !ppu->odd_frame;
             ppu->scan_line = 0;
         }
     }

@@ -3,6 +3,8 @@
 #include "bus.h"
 #include <stdio.h>
 #include "cpu.h"
+#include "controller.h"
+
 
 int main(int argc, char **argv)
 {
@@ -22,6 +24,7 @@ int main(int argc, char **argv)
     Bus bus;
     Ppu ppu;
     Cpu cpu;
+    Controller controller;
 
     bool loaded = cartridge_load(&cartridge, argv[1]);
 
@@ -38,7 +41,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    bus_init(&bus, &cartridge, &ppu);
+    bus_init(&bus, &cartridge, &ppu,&controller);
     cpu_init(&cpu, &bus);
     ppu_init(&ppu, &cartridge, &cpu);
 
@@ -57,6 +60,8 @@ int main(int argc, char **argv)
         if (IsKeyPressed(KEY_O))
         {
             ppu.PPUMASK ^= BG_ENABLE_BIT;
+            ppu.PPUSTATUS |= V_BLANK_BIT;
+            
         }
         if (IsKeyPressed(KEY_D))
         {
@@ -84,10 +89,13 @@ int main(int argc, char **argv)
 
         while (!ppu.frame_ready)
         {
+            controller_update(&controller);
             cpu_clock(&cpu);
             ppu_clock(&ppu);
             ppu_clock(&ppu);
             ppu_clock(&ppu);
+
+
         }
 
         UpdateTexture(ppu.gameTexture.texture, ppu.pixels);

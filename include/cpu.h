@@ -20,6 +20,7 @@
 typedef struct bus Bus;
 
 
+
 typedef struct cpu
 {
     uint8_t x, y , a , p, sp;
