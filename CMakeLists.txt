@@ -24,6 +24,7 @@ add_library(emu_core
     src/cartridge.c
     src/opcodes.c
     src/addressing_modes.c
+    src/controller.c
 )
 
 target_include_directories(emu_core PUBLIC include )
