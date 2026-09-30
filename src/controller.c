@@ -29,7 +29,6 @@ uint8_t controller_read(Controller *controller){
 void controller_write(Controller *controller, uint8_t value){
     if(value & 1){
         controller->strobe = true;
-        printf("strobe updated");
     } else{
         controller->strobe = false;
     }

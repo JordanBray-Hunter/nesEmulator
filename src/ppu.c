@@ -5,6 +5,12 @@
 #define HORIZONTAL_BITMAP 0x041F
 #define VERTICAL_BITMAP 0x7BE0
 
+Color get_color_from_pallet(Ppu *ppu, uint8_t palette, uint8_t pixel)
+{
+
+    return colors[ppu_vram_read(ppu, (0x3F00) + (palette << 2) + pixel) & 0x3F];
+}
+
 // Based of sudo code from https://www.nesdev.org/wiki/PPU_scrolling#PPU_internal_registers
 void course_x_increment(Ppu *ppu)
 {
@@ -75,6 +81,27 @@ void y_increment(Ppu *ppu)
     }
 }
 
+void ppu_render_pixel(Ppu *ppu)
+{
+    uint16_t bit_mux = 0x8000 >> ppu->fine_x;
+
+    uint8_t bg_pixel = 0x00; // The 2-bit pixel to be rendered
+    uint8_t bg_palette = 0x00;
+
+    uint8_t p0_pixel = (ppu->shift_register_lsb_plane & bit_mux) > 0;
+    uint8_t p1_pixel = (ppu->shift_register_msb_plane & bit_mux) > 0;
+
+    uint8_t p0_palette = (ppu->shift_register_attrbute_lsb & bit_mux) > 0;
+    uint8_t p1_palette = (ppu->shift_register_attrbute_msb & bit_mux) > 0;
+
+    bg_palette = (p1_palette << 1) | p0_palette;
+
+    // Combine to form pixel index
+    bg_pixel = (p1_pixel << 1) | p0_pixel;
+
+    ppu->pixels[ppu->scan_line * 256 + ppu->dot] = get_color_from_pallet(ppu, bg_palette, bg_pixel);
+}
+
 void load_shift_registers(Ppu *ppu)
 {
 
@@ -95,9 +122,74 @@ void shift_registers(Ppu *ppu)
     ppu->shift_register_attrbute_msb <<= 1;
 }
 
+void ppu_retrive_pixel(Ppu *ppu)
+{
+
+    switch ((ppu->dot - 1) % 8)
+    {
+    // maybe needs to be diffrent.
+    case 0: // GET NAMETABLE ENTRY
+
+        load_shift_registers(ppu);
+        ppu->next_nametable_id = ppu_vram_read(ppu, 0x2000 + (ppu->vram_address & 0x0FFF));
+        // printf("id: %d\n",ppu->next_nametable_id);
+
+        break;
+    case 2: // Get name table attribute
+
+        uint8_t attr_byte = ppu_vram_read(ppu, 0x23C0 | (ppu->vram_address & 0x0C00) | ((ppu->vram_address >> 4) & 0x38) | ((ppu->vram_address >> 2) & 0x07));
+
+        // 2. Determine shifts based on Bit 1 of Coarse X and Coarse Y
+        // Coarse X bit 1 is bit 1 of vram_address
+        // Coarse Y bit 1 is bit 6 of vram_address
+        int coarse_x_bit1 = (ppu->vram_address & 0x0002) >> 1;
+        int coarse_y_bit1 = (ppu->vram_address & 0x0040) >> 6;
+
+        // Top-Left: shift 0, Top-Right: shift 2, Bottom-Left: shift 4, Bottom-Right: shift 6
+        int shift = (coarse_y_bit1 << 2) | (coarse_x_bit1 << 1);
+
+        // 3. Extract the clean 2-bit palette index (0 to 3)
+        ppu->next_nametable_attr = (attr_byte >> shift) & 0x03;
+
+        // if bit 1 for course x is high then we are
+        // if() ppu->next_nametable_attr >>=2;
+
+        // attribute address = 0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07)
+        break;
+    case 4: // Get BG lsb plane (ppu->PPUCTRL & 0x10) << 8)
+            // pattern table id. ((0) << 12)
+
+        uint16_t pattern_table = (((uint16_t)(ppu->PPUCTRL & 0x10)) << 8);
+        uint16_t pattern_id = (ppu->next_nametable_id << 4);
+        uint16_t finey = ((ppu->vram_address & FINE_Y_BITS) >> 12);
+
+        // printf("address tabel: %d\n",pattern_table);
+        // printf("address patternid: %d\n",pattern_id);
+        // printf("address finey: %d\n",finey);
+
+        uint16_t address_lsb = pattern_table | pattern_id | (0 << 3) | finey;
+        //
+        ppu->next_lsb_plane = ppu_vram_read(ppu, address_lsb);
+        // printf("value: %d \n",ppu->next_lsb_plane);
+
+        break;
+    case 6: // Get BG msb plane.
+        uint16_t address_msb = (((uint16_t)(ppu->PPUCTRL & 0x10)) << 8) | ((uint16_t)(ppu->next_nametable_id) << 4) | (1 << 3) | ((ppu->vram_address & FINE_Y_BITS) >> 12);
+        // printf("address msb: %d\n",address_msb);
+        ppu->next_msb_plane = ppu_vram_read(ppu, address_msb);
+        // printf("value: %d \n",ppu->next_msb_plane);
+        break;
+    case 7: // Increment x bit
+        course_x_increment(ppu);
+
+        break;
+    }
+}
+
 uint8_t ppu_vram_read(Ppu *ppu, uint16_t address)
 {
-    
+    //address &= 0x3FFF;
+
     if (address >= 0x0000 && address <= 0x0FFF)
     {
         return ppu->cartridge->chr_rom[address];
@@ -137,7 +229,8 @@ uint8_t ppu_vram_read(Ppu *ppu, uint16_t address)
 
 void ppu_vram_write(Ppu *ppu, uint16_t address, uint8_t value)
 {
-    //printf("[VRAM WRITE] addr=%04X value=%02X\n", address, value);
+    //address &= 0x3FFF;
+    // printf("[VRAM WRITE] addr=%04X value=%02X\n", address, value);
     if (address >= 0x0000 && address <= 0x0FFF)
     {
         ppu->cartridge->chr_rom[address] = value;
@@ -171,7 +264,7 @@ void ppu_vram_write(Ppu *ppu, uint16_t address, uint8_t value)
         {
             base_address -= 0x0010;
         }
-       // printf("PALETTE WRITE: addr=%04X base=%02X value=%02X\n", address, base_address, value);
+        // printf("PALETTE WRITE: addr=%04X base=%02X value=%02X\n", address, base_address, value);
         ppu->palette_ram[base_address] = value;
 
         return;
@@ -193,96 +286,94 @@ void ppu_init(Ppu *ppu, Cartridge *cartridge, Cpu *cpu)
     ppu->scan_line = 0;
 }
 
-Color get_color_from_pallet(Ppu *ppu, uint8_t palette, uint8_t pixel)
-{
-
-    return colors[ppu_vram_read(ppu, (0x3F00) + (palette << 2) + pixel) & 0x3F];
-}
-
 Color palette[4] = {BLACK, RED, GREEN, BLUE};
+
+// void ppu_clock(Ppu *ppu)
+// {
+//     bool rendering_enabled =
+//     (ppu->PPUMASK & (BG_ENABLE_BIT | SPRITE_ENABLE_BIT)) != 0;
+
+
+//     // Fetch
+
+//     // Render 
+
+//     //
+
+
+//     if (ppu->scan_line == 261 && ppu->dot >= 280 && ppu->dot <= 304)
+//     {
+//         copy_vertical_bits(ppu);
+//     }
+
+//     if (ppu->dot == 256)
+//     {
+
+//         y_increment(ppu);
+//     }
+
+//     if (ppu->dot == 257)
+//     {
+//         // load_shift_registers(ppu);
+//         copy_horizontal_bits(ppu);
+//     }
+
+//     if (ppu->scan_line == 261 && ppu->dot == 1)
+//     {
+//         ppu->PPUSTATUS &= ~(V_BLANK_BIT);
+//     }
+
+//     if (ppu->scan_line == 241 && ppu->dot == 1)
+//     {
+//         ppu->frame_ready = true;
+//         ppu->PPUSTATUS |= V_BLANK_BIT;
+
+//         if (ppu->PPUCTRL & NMI_ENABLE_BIT)
+//         {
+//             ppu->cpu->nmi_waiting = true;
+//         }
+//     }
+
+//     ppu->dot++;
+//     if (ppu->dot >= 341)
+//     {
+//         ppu->dot = 0;
+//         ppu->scan_line++;
+
+//         if (ppu->scan_line >= 262)
+//         {
+//             ppu->odd_frame = !ppu->odd_frame;
+//             ppu->scan_line = 0;
+//             if (ppu->odd_frame && ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT)) )
+//             {
+//                 ppu->dot = 1;
+//             }
+//         }
+//     }
+// }
 
 void ppu_clock(Ppu *ppu)
 {
     // if (ppu->dot == 100 && ppu->scan_line == 50) printf("fine_x=%d\n", ppu->fine_x);
     if (ppu->scan_line == 0 && ppu->odd_frame && ppu->dot == 0 && ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT)))
-		{
-			// "Odd Frame" cycle skip
-			ppu->dot = 1;
-		}
+    {
+        // "Odd Frame" cycle skip
+        ppu->dot = 1;
+    }
     if ((ppu->scan_line < 240 || ppu->scan_line == 261))
     {
 
-        if (ppu->dot >= 1 && ppu->dot <= 336)
-        {
-            shift_registers(ppu);
-        }
+        // if (ppu->dot >= 1 && ppu->dot <= 336)
+        // {
+        //     shift_registers(ppu);
+        // }
 
         if ((1 <= ppu->dot && ppu->dot < 257) || (321 <= ppu->dot && ppu->dot < 337))
         {
             // printf("cycle value:%d \n",(ppu->dot - 1) % 8);
             //  SIMILAR TO JTHIGN
             // shift_registers(ppu);
-
-            switch ((ppu->dot - 1) % 8)
-            {
-
-            // maybe needs to be diffrent.
-            case 0: // GET NAMETABLE ENTRY
-
-                load_shift_registers(ppu);
-                ppu->next_nametable_id = ppu_vram_read(ppu, 0x2000 + (ppu->vram_address & 0x0FFF));
-                // printf("id: %d\n",ppu->next_nametable_id);
-
-                break;
-            case 2: // Get name table attribute
-
-                uint8_t attr_byte = ppu_vram_read(ppu, 0x23C0 | (ppu->vram_address & 0x0C00) | ((ppu->vram_address >> 4) & 0x38) | ((ppu->vram_address >> 2) & 0x07));
-
-                // 2. Determine shifts based on Bit 1 of Coarse X and Coarse Y
-                // Coarse X bit 1 is bit 1 of vram_address
-                // Coarse Y bit 1 is bit 6 of vram_address
-                int coarse_x_bit1 = (ppu->vram_address & 0x0002) >> 1;
-                int coarse_y_bit1 = (ppu->vram_address & 0x0040) >> 6;
-
-                // Top-Left: shift 0, Top-Right: shift 2, Bottom-Left: shift 4, Bottom-Right: shift 6
-                int shift = (coarse_y_bit1 << 2) | (coarse_x_bit1 << 1);
-
-                // 3. Extract the clean 2-bit palette index (0 to 3)
-                ppu->next_nametable_attr = (attr_byte >> shift) & 0x03;
-
-                // if bit 1 for course x is high then we are
-                // if() ppu->next_nametable_attr >>=2;
-
-                // attribute address = 0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07)
-                break;
-            case 4: // Get BG lsb plane (ppu->PPUCTRL & 0x10) << 8)
-                    // pattern table id. ((0) << 12)
-
-                uint16_t pattern_table = (((uint16_t)(ppu->PPUCTRL & 0x10)) << 8);
-                uint16_t pattern_id = (ppu->next_nametable_id << 4);
-                uint16_t finey = ((ppu->vram_address & FINE_Y_BITS) >> 12);
-
-                // printf("address tabel: %d\n",pattern_table);
-                // printf("address patternid: %d\n",pattern_id);
-                // printf("address finey: %d\n",finey);
-
-                uint16_t address_lsb = pattern_table | pattern_id | (0 << 3) | finey;
-                //
-                ppu->next_lsb_plane = ppu_vram_read(ppu, address_lsb);
-                // printf("value: %d \n",ppu->next_lsb_plane);
-
-                break;
-            case 6: // Get BG msb plane.
-                uint16_t address_msb = (((uint16_t)(ppu->PPUCTRL & 0x10)) << 8) | ((uint16_t)(ppu->next_nametable_id) << 4) | (1 << 3) | ((ppu->vram_address & FINE_Y_BITS) >> 12);
-                // printf("address msb: %d\n",address_msb);
-                ppu->next_msb_plane = ppu_vram_read(ppu, address_msb);
-                // printf("value: %d \n",ppu->next_msb_plane);
-                break;
-            case 7: // Increment x bit
-                course_x_increment(ppu);
-
-                break;
-            }
+            ppu_retrive_pixel(ppu);
         }
     }
 
@@ -290,27 +381,8 @@ void ppu_clock(Ppu *ppu)
     {
         if ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT))
         {
-
-            uint16_t bit_mux = 0x8000 >> ppu->fine_x;
-
-            uint8_t bg_pixel = 0x00; // The 2-bit pixel to be rendered
-            uint8_t bg_palette = 0x00;
-
-            uint8_t p0_pixel = (ppu->shift_register_lsb_plane & bit_mux) > 0;
-            uint8_t p1_pixel = (ppu->shift_register_msb_plane & bit_mux) > 0;
-
-            uint8_t p0_palette = (ppu->shift_register_attrbute_lsb & bit_mux) > 0;
-            uint8_t p1_palette = (ppu->shift_register_attrbute_msb & bit_mux) > 0;
-
-            bg_palette = (p1_palette << 1) | p0_palette;
-
-            // Combine to form pixel index
-            bg_pixel = (p1_pixel << 1) | p0_pixel;
-
-            // if(bg_palette != 0 && bg_pixel != 0){
-            // printf("pixel: %d\n",bg_pixel);
-            // printf("pallet: %d\n",bg_palette);}
-            ppu->pixels[ppu->scan_line * 256 + ppu->dot] = get_color_from_pallet(ppu, bg_palette, bg_pixel); // palette[bg_pixel]; //
+            ppu_render_pixel(ppu);
+            shift_registers(ppu);
         }
         else
         {
@@ -322,6 +394,17 @@ void ppu_clock(Ppu *ppu)
         ppu->PPUSTATUS &= ~(V_BLANK_BIT);
     }
 
+    if (ppu->scan_line == 241 && ppu->dot == 1)
+    {
+        ppu->frame_ready = true;
+        ppu->PPUSTATUS |= V_BLANK_BIT;
+
+        if (ppu->PPUCTRL & NMI_ENABLE_BIT)
+        {
+            ppu->cpu->nmi_waiting = true;
+        }
+    }
+
     if (ppu->dot == 256)
     {
 
@@ -330,7 +413,7 @@ void ppu_clock(Ppu *ppu)
 
     if (ppu->dot == 257)
     {
-        // load_shift_registers(ppu);
+        load_shift_registers(ppu);
         copy_horizontal_bits(ppu);
     }
 
@@ -344,17 +427,6 @@ void ppu_clock(Ppu *ppu)
     {
         ppu->dot = 0;
         ppu->scan_line++;
-
-        if (ppu->scan_line == 241)
-        {
-            ppu->frame_ready = true;
-            ppu->PPUSTATUS |= V_BLANK_BIT;
-
-            if (ppu->PPUCTRL & NMI_ENABLE_BIT)
-            {
-                ppu->cpu->nmi_waiting = true;
-            }
-        }
 
         if (ppu->scan_line >= 262)
         {
@@ -380,7 +452,10 @@ uint8_t ppu_read(Ppu *ppu, uint16_t address)
         data = ppu->PPUSTATUS | (ppu->ppu_data_buffer & 0x1F);
 
         ppu->write_toggle = 0;
-        ppu->PPUSTATUS &= ~(V_BLANK_BIT);
+        if (ppu->PPUSTATUS & V_BLANK_BIT)
+        {
+            ppu->PPUSTATUS &= ~(V_BLANK_BIT);
+        }
 
         return data;
     case 0x0007:
