@@ -3,6 +3,7 @@
 #include "opcodes.h"
 #include <stdio.h>
 #include "cpu.h"
+#include "addressing_modes.h"
 
 static TestSystem sys;
 
@@ -36,7 +37,7 @@ Test(adc, immediate_with_carry)
 {
     uint8_t program[] = {0x69, 0x20};
     sys.cpu.a = 0x22;
-    set_carry(&sys.cpu);
+    set_carry(&sys.cpu, addr_unused);
     load_program(&sys, 0x8000, program, sizeof(program));
     cpu_clock(&sys.cpu);
     cr_assert_eq(sys.cpu.a, 0x43);
@@ -67,7 +68,6 @@ Test(adc, carry_out)
     CHECK_FLAG(C_BIT, C_BIT);
 }
 
-
 Test(adc, overflow)
 {
     uint8_t program[] = {0x69, 0x7F};
@@ -76,5 +76,5 @@ Test(adc, overflow)
     cpu_clock(&sys.cpu);
     cr_assert_eq(sys.cpu.a, 0x80);
     CHECK_FLAG(V_BIT, V_BIT);
-    CHECK_FLAG(N_BIT,N_BIT);
+    CHECK_FLAG(N_BIT, N_BIT);
 }

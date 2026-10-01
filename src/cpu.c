@@ -12,9 +12,6 @@ void update_zn_flags(Cpu *cpu, uint8_t value)
     cpu->p |= (value == 0 ? Z_BIT : 0);
 }
 
-
-
-
 void update_alu_flags(Cpu *cpu, uint8_t accumulator, uint8_t value, uint16_t result)
 {
 
@@ -82,7 +79,7 @@ void cpu_clock(Cpu *cpu)
         bus_write(cpu->bus, 0x0100 + cpu->sp, cpu->pc & 0xFF);
         cpu->sp--;
 
-         uint8_t status_to_push = (cpu->p | 0x20) & ~0x10;
+        uint8_t status_to_push = (cpu->p | 0x20) & ~0x10;
         bus_write(cpu->bus, 0x0100 + cpu->sp, status_to_push);
         cpu->sp--;
 
@@ -93,23 +90,23 @@ void cpu_clock(Cpu *cpu)
         cpu->pc = ((uint16_t)high << 8) | low;
 
         cpu->nmi_waiting = false;
-        cpu->cycles_remaining = 7;
+        cpu->cycles_remaining = 6;
         return;
     }
 
     uint8_t opcode = bus_read(cpu->bus, cpu->pc++);
 
-    //printf("current opcode: %d \n ", opcode);
+    // printf("current opcode: %d \n ", opcode);
     Instruction instruction = opcodes[opcode];
 
     if (instruction.opcode_func == NULL)
-{
-    printf("UNIMPLEMENTED OPCODE: $%02X at PC=$%04X\n", opcode, cpu->pc - 1);
-    exit(1);
-}
+    {
+        printf("UNIMPLEMENTED OPCODE: $%02X at PC=$%04X\n", opcode, cpu->pc - 1);
+        exit(1);
+    }
 
     cpu->cycles_remaining = instruction.cycles - 1;
-    instruction.opcode_func(cpu);
+    instruction.opcode_func(cpu, instruction.addr_func);
 
     return;
 }
