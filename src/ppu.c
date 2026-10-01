@@ -188,7 +188,7 @@ void ppu_retrive_pixel(Ppu *ppu)
 
 uint8_t ppu_vram_read(Ppu *ppu, uint16_t address)
 {
-    //address &= 0x3FFF;
+    // address &= 0x3FFF;
 
     if (address >= 0x0000 && address <= 0x0FFF)
     {
@@ -229,8 +229,8 @@ uint8_t ppu_vram_read(Ppu *ppu, uint16_t address)
 
 void ppu_vram_write(Ppu *ppu, uint16_t address, uint8_t value)
 {
-    //address &= 0x3FFF;
-    // printf("[VRAM WRITE] addr=%04X value=%02X\n", address, value);
+    // address &= 0x3FFF;
+    //  printf("[VRAM WRITE] addr=%04X value=%02X\n", address, value);
     if (address >= 0x0000 && address <= 0x0FFF)
     {
         ppu->cartridge->chr_rom[address] = value;
@@ -293,13 +293,11 @@ Color palette[4] = {BLACK, RED, GREEN, BLUE};
 //     bool rendering_enabled =
 //     (ppu->PPUMASK & (BG_ENABLE_BIT | SPRITE_ENABLE_BIT)) != 0;
 
-
 //     // Fetch
 
-//     // Render 
+//     // Render
 
 //     //
-
 
 //     if (ppu->scan_line == 261 && ppu->dot >= 280 && ppu->dot <= 304)
 //     {
@@ -405,16 +403,19 @@ void ppu_clock(Ppu *ppu)
         }
     }
 
-    if (ppu->dot == 256)
+    if (((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT)) && ppu->scan_line < 240 || ppu->scan_line == 261)
     {
+        if (ppu->dot == 256)
+        {
 
-        y_increment(ppu);
-    }
+            y_increment(ppu);
+        }
 
-    if (ppu->dot == 257)
-    {
-        load_shift_registers(ppu);
-        copy_horizontal_bits(ppu);
+        if (ppu->dot == 257)
+        {
+            load_shift_registers(ppu);
+            copy_horizontal_bits(ppu);
+        }
     }
 
     if (ppu->scan_line == 261 && ppu->dot >= 280 && ppu->dot <= 304)
@@ -632,7 +633,68 @@ void print_nametables_to_console(Ppu *ppu)
                     uint16_t vram_addr = nt_base_address + (tile_row * 32) + tile_col;
                     uint8_t tile_index = ppu_vram_read(ppu, vram_addr);
 
-                    // FIXED: Empty spaces must be 2 characters wide to match %02X formatting
+                    // FIXED: Empty spaces
+                    // void ppu_clock(Ppu *ppu)
+                    // {
+                    //     bool rendering_enabled =
+                    //     (ppu->PPUMASK & (BG_ENABLE_BIT | SPRITE_ENABLE_BIT)) != 0;
+
+                    //     // Fetch
+
+                    //     // Render
+
+                    //     //
+
+                    //     if (ppu->scan_line == 261 && ppu->dot >= 280 && ppu->dot <= 304)
+                    //     {
+                    //         copy_vertical_bits(ppu);
+                    //     }
+
+                    //     if (ppu->dot == 256)
+                    //     {
+
+                    //         y_increment(ppu);
+                    //     }
+
+                    //     if (ppu->dot == 257)
+                    //     {
+                    //         // load_shift_registers(ppu);
+                    //         copy_horizontal_bits(ppu);
+                    //     }
+
+                    //     if (ppu->scan_line == 261 && ppu->dot == 1)
+                    //     {
+                    //         ppu->PPUSTATUS &= ~(V_BLANK_BIT);
+                    //     }
+
+                    //     if (ppu->scan_line == 241 && ppu->dot == 1)
+                    //     {
+                    //         ppu->frame_ready = true;
+                    //         ppu->PPUSTATUS |= V_BLANK_BIT;
+
+                    //         if (ppu->PPUCTRL & NMI_ENABLE_BIT)
+                    //         {
+                    //             ppu->cpu->nmi_waiting = true;
+                    //         }
+                    //     }
+
+                    //     ppu->dot++;
+                    //     if (ppu->dot >= 341)
+                    //     {
+                    //         ppu->dot = 0;
+                    //         ppu->scan_line++;
+
+                    //         if (ppu->scan_line >= 262)
+                    //         {
+                    //             ppu->odd_frame = !ppu->odd_frame;
+                    //             ppu->scan_line = 0;
+                    //             if (ppu->odd_frame && ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT)) )
+                    //             {
+                    //                 ppu->dot = 1;
+                    //             }
+                    //         }
+                    //     }
+                    // }must be 2 characters wide to match %02X formatting
                     if (tile_index == 0x00 || tile_index == 0x20)
                     {
                         printf("  ");
