@@ -98,8 +98,8 @@ void ppu_render_pixel(Ppu *ppu)
 
     // Combine to form pixel index
     bg_pixel = (p1_pixel << 1) | p0_pixel;
-
-    ppu->pixels[ppu->scan_line * 256 + ppu->dot] = get_color_from_pallet(ppu, bg_palette, bg_pixel);
+    // minus 1 to deal with arrays starting at 0 not 1
+    ppu->pixels[(ppu->scan_line * 256) + ppu->dot - 1] = get_color_from_pallet(ppu, bg_palette, bg_pixel);
 }
 
 void load_shift_registers(Ppu *ppu)
@@ -130,7 +130,6 @@ void ppu_retrive_pixel(Ppu *ppu)
     // maybe needs to be diffrent.
     case 0: // GET NAMETABLE ENTRY
 
-        load_shift_registers(ppu);
         ppu->next_nametable_id = ppu_vram_read(ppu, 0x2000 + (ppu->vram_address & 0x0FFF));
         // printf("id: %d\n",ppu->next_nametable_id);
 
@@ -151,10 +150,6 @@ void ppu_retrive_pixel(Ppu *ppu)
         // 3. Extract the clean 2-bit palette index (0 to 3)
         ppu->next_nametable_attr = (attr_byte >> shift) & 0x03;
 
-        // if bit 1 for course x is high then we are
-        // if() ppu->next_nametable_attr >>=2;
-
-        // attribute address = 0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07)
         break;
     case 4: // Get BG lsb plane (ppu->PPUCTRL & 0x10) << 8)
             // pattern table id. ((0) << 12)
@@ -163,21 +158,16 @@ void ppu_retrive_pixel(Ppu *ppu)
         uint16_t pattern_id = (ppu->next_nametable_id << 4);
         uint16_t finey = ((ppu->vram_address & FINE_Y_BITS) >> 12);
 
-        // printf("address tabel: %d\n",pattern_table);
-        // printf("address patternid: %d\n",pattern_id);
-        // printf("address finey: %d\n",finey);
-
         uint16_t address_lsb = pattern_table | pattern_id | (0 << 3) | finey;
         //
         ppu->next_lsb_plane = ppu_vram_read(ppu, address_lsb);
-        // printf("value: %d \n",ppu->next_lsb_plane);
 
         break;
     case 6: // Get BG msb plane.
         uint16_t address_msb = (((uint16_t)(ppu->PPUCTRL & 0x10)) << 8) | ((uint16_t)(ppu->next_nametable_id) << 4) | (1 << 3) | ((ppu->vram_address & FINE_Y_BITS) >> 12);
-        // printf("address msb: %d\n",address_msb);
+
         ppu->next_msb_plane = ppu_vram_read(ppu, address_msb);
-        // printf("value: %d \n",ppu->next_msb_plane);
+
         break;
     case 7: // Increment x bit
         course_x_increment(ppu);
@@ -288,105 +278,64 @@ void ppu_init(Ppu *ppu, Cartridge *cartridge, Cpu *cpu)
 
 Color palette[4] = {BLACK, RED, GREEN, BLUE};
 
-// void ppu_clock(Ppu *ppu)
-// {
-//     bool rendering_enabled =
-//     (ppu->PPUMASK & (BG_ENABLE_BIT | SPRITE_ENABLE_BIT)) != 0;
-
-//     // Fetch
-
-//     // Render
-
-//     //
-
-//     if (ppu->scan_line == 261 && ppu->dot >= 280 && ppu->dot <= 304)
-//     {
-//         copy_vertical_bits(ppu);
-//     }
-
-//     if (ppu->dot == 256)
-//     {
-
-//         y_increment(ppu);
-//     }
-
-//     if (ppu->dot == 257)
-//     {
-//         // load_shift_registers(ppu);
-//         copy_horizontal_bits(ppu);
-//     }
-
-//     if (ppu->scan_line == 261 && ppu->dot == 1)
-//     {
-//         ppu->PPUSTATUS &= ~(V_BLANK_BIT);
-//     }
-
-//     if (ppu->scan_line == 241 && ppu->dot == 1)
-//     {
-//         ppu->frame_ready = true;
-//         ppu->PPUSTATUS |= V_BLANK_BIT;
-
-//         if (ppu->PPUCTRL & NMI_ENABLE_BIT)
-//         {
-//             ppu->cpu->nmi_waiting = true;
-//         }
-//     }
-
-//     ppu->dot++;
-//     if (ppu->dot >= 341)
-//     {
-//         ppu->dot = 0;
-//         ppu->scan_line++;
-
-//         if (ppu->scan_line >= 262)
-//         {
-//             ppu->odd_frame = !ppu->odd_frame;
-//             ppu->scan_line = 0;
-//             if (ppu->odd_frame && ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT)) )
-//             {
-//                 ppu->dot = 1;
-//             }
-//         }
-//     }
-// }
-
 void ppu_clock(Ppu *ppu)
 {
-    // if (ppu->dot == 100 && ppu->scan_line == 50) printf("fine_x=%d\n", ppu->fine_x);
-    if (ppu->scan_line == 0 && ppu->odd_frame && ppu->dot == 0 && ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT)))
-    {
-        // "Odd Frame" cycle skip
-        ppu->dot = 1;
-    }
-    if ((ppu->scan_line < 240 || ppu->scan_line == 261))
+    bool rendering_enabled =
+        (ppu->PPUMASK & (BG_ENABLE_BIT | SPRITE_ENABLE_BIT)) != 0;
+    bool fetch_range = ((ppu->scan_line >= 0 && ppu->scan_line < 240) || ppu->scan_line == 261) && ((ppu->dot >= 1 && ppu->dot < 257) || (ppu->dot >= 321 && ppu->dot < 337));
+    bool load_shifters = ((ppu->dot >= 9 && ppu->dot <= 257) || (ppu->dot >= 329 && ppu->dot <= 337)) && ((ppu->dot - 1) % 8 == 0);
+
+    bool render_range = (ppu->scan_line <= 239) && (ppu->dot > 0 && ppu->dot <= 256);
+    bool shift_range = (ppu->dot >= 2 && ppu->dot <= 257) || (ppu->dot >= 322 && ppu->dot <= 337);
+
+    // Render
+
+    if (render_range)
     {
 
-        // if (ppu->dot >= 1 && ppu->dot <= 336)
-        // {
-        //     shift_registers(ppu);
-        // }
-
-        if ((1 <= ppu->dot && ppu->dot < 257) || (321 <= ppu->dot && ppu->dot < 337))
-        {
-            // printf("cycle value:%d \n",(ppu->dot - 1) % 8);
-            //  SIMILAR TO JTHIGN
-            // shift_registers(ppu);
-            ppu_retrive_pixel(ppu);
-        }
-    }
-
-    if (ppu->scan_line < 240 && ppu->dot < 256)
-    {
-        if ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT))
+        if (rendering_enabled)
         {
             ppu_render_pixel(ppu);
-            shift_registers(ppu);
         }
         else
         {
-            ppu->pixels[ppu->scan_line * 256 + ppu->dot] = WHITE;
+            ppu->pixels[ppu->scan_line * 256 + ppu->dot - 1] = WHITE;
         }
     }
+
+    if (rendering_enabled && (ppu->scan_line < 240 || ppu->scan_line == 261) && shift_range)
+    {
+        shift_registers(ppu);
+    }
+
+    // Fetch
+    if (rendering_enabled && fetch_range)
+    {
+        ppu_retrive_pixel(ppu);
+    }
+
+    if (rendering_enabled && load_shifters && (ppu->scan_line < 240 || ppu->scan_line == 261))
+    {
+        load_shift_registers(ppu);
+    }
+
+    if (rendering_enabled && ppu->scan_line == 261 && ppu->dot >= 280 && ppu->dot <= 304)
+    {
+        copy_vertical_bits(ppu);
+    }
+
+    if (rendering_enabled && ppu->dot == 256)
+    {
+
+        y_increment(ppu);
+    }
+
+    if (rendering_enabled && ppu->dot == 257)
+    {
+
+        copy_horizontal_bits(ppu);
+    }
+
     if (ppu->scan_line == 261 && ppu->dot == 1)
     {
         ppu->PPUSTATUS &= ~(V_BLANK_BIT);
@@ -403,26 +352,6 @@ void ppu_clock(Ppu *ppu)
         }
     }
 
-    if (((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT)) && ppu->scan_line < 240 || ppu->scan_line == 261)
-    {
-        if (ppu->dot == 256)
-        {
-
-            y_increment(ppu);
-        }
-
-        if (ppu->dot == 257)
-        {
-            load_shift_registers(ppu);
-            copy_horizontal_bits(ppu);
-        }
-    }
-
-    if (ppu->scan_line == 261 && ppu->dot >= 280 && ppu->dot <= 304)
-    {
-        copy_vertical_bits(ppu);
-    }
-
     ppu->dot++;
     if (ppu->dot >= 341)
     {
@@ -433,9 +362,100 @@ void ppu_clock(Ppu *ppu)
         {
             ppu->odd_frame = !ppu->odd_frame;
             ppu->scan_line = 0;
+            if (ppu->odd_frame && ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT)))
+            {
+                ppu->dot = 1;
+            }
         }
     }
 }
+
+// void ppu_clock(Ppu *ppu)
+// {
+//     // if (ppu->dot == 100 && ppu->scan_line == 50) printf("fine_x=%d\n", ppu->fine_x);
+//     if (ppu->scan_line == 0 && ppu->odd_frame && ppu->dot == 0 && ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT)))
+//     {
+//         // "Odd Frame" cycle skip
+//         ppu->dot = 1;
+//     }
+//     if ((ppu->scan_line < 240 || ppu->scan_line == 261))
+//     {
+
+//         // if (ppu->dot >= 1 && ppu->dot <= 336)
+//         // {
+//         //     shift_registers(ppu);
+//         // }
+
+//         if ((1 <= ppu->dot && ppu->dot < 257) || (321 <= ppu->dot && ppu->dot < 337))
+//         {
+//             // printf("cycle value:%d \n",(ppu->dot - 1) % 8);
+//             //  SIMILAR TO JTHIGN
+//             // shift_registers(ppu);
+//             ppu_retrive_pixel(ppu);
+//         }
+//     }
+
+//     if (ppu->scan_line < 240 && ppu->dot < 256)
+//     {
+//         if ((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT))
+//         {
+//             ppu_render_pixel(ppu);
+//             shift_registers(ppu);
+//         }
+//         else
+//         {
+//             ppu->pixels[ppu->scan_line * 256 + ppu->dot] = WHITE;
+//         }
+//     }
+//     if (ppu->scan_line == 261 && ppu->dot == 1)
+//     {
+//         ppu->PPUSTATUS &= ~(V_BLANK_BIT);
+//     }
+
+//     if (ppu->scan_line == 241 && ppu->dot == 1)
+//     {
+//         ppu->frame_ready = true;
+//         ppu->PPUSTATUS |= V_BLANK_BIT;
+
+//         if (ppu->PPUCTRL & NMI_ENABLE_BIT)
+//         {
+//             ppu->cpu->nmi_waiting = true;
+//         }
+//     }
+
+//     if (((ppu->PPUMASK & BG_ENABLE_BIT || ppu->PPUMASK & SPRITE_ENABLE_BIT)) && ppu->scan_line < 240 || ppu->scan_line == 261)
+//     {
+//         if (ppu->dot == 256)
+//         {
+
+//             y_increment(ppu);
+//         }
+
+//         if (ppu->dot == 257)
+//         {
+//             load_shift_registers(ppu);
+//             copy_horizontal_bits(ppu);
+//         }
+//     }
+
+//     if (ppu->scan_line == 261 && ppu->dot >= 280 && ppu->dot <= 304)
+//     {
+//         copy_vertical_bits(ppu);
+//     }
+
+//     ppu->dot++;
+//     if (ppu->dot >= 341)
+//     {
+//         ppu->dot = 0;
+//         ppu->scan_line++;
+
+//         if (ppu->scan_line >= 262)
+//         {
+//             ppu->odd_frame = !ppu->odd_frame;
+//             ppu->scan_line = 0;
+//         }
+//     }
+// }
 
 uint8_t ppu_read(Ppu *ppu, uint16_t address)
 {
