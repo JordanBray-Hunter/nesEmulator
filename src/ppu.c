@@ -178,7 +178,7 @@ void ppu_retrive_pixel(Ppu *ppu)
 
 uint8_t ppu_vram_read(Ppu *ppu, uint16_t address)
 {
-    // address &= 0x3FFF;
+    address &= 0x3FFF;
 
     if (address >= 0x0000 && address <= 0x0FFF)
     {
@@ -219,7 +219,7 @@ uint8_t ppu_vram_read(Ppu *ppu, uint16_t address)
 
 void ppu_vram_write(Ppu *ppu, uint16_t address, uint8_t value)
 {
-    // address &= 0x3FFF;
+     address &= 0x3FFF;
     //  printf("[VRAM WRITE] addr=%04X value=%02X\n", address, value);
     if (address >= 0x0000 && address <= 0x0FFF)
     {
@@ -285,12 +285,18 @@ void ppu_clock(Ppu *ppu)
     bool fetch_range = ((ppu->scan_line >= 0 && ppu->scan_line < 240) || ppu->scan_line == 261) && ((ppu->dot >= 1 && ppu->dot < 257) || (ppu->dot >= 321 && ppu->dot < 337));
     bool load_shifters = ((ppu->dot >= 9 && ppu->dot <= 257) || (ppu->dot >= 329 && ppu->dot <= 337)) && ((ppu->dot - 1) % 8 == 0);
 
+    bool render_line = ppu->scan_line < 240 || ppu->scan_line == 261;
+
     bool render_range = (ppu->scan_line <= 239) && (ppu->dot > 0 && ppu->dot <= 256);
     bool shift_range = (ppu->dot >= 2 && ppu->dot <= 257) || (ppu->dot >= 322 && ppu->dot <= 337);
 
-    // Render
 
-    if (render_range)
+    if (rendering_enabled && (ppu->scan_line < 240 || ppu->scan_line == 261) && shift_range)
+    {
+        shift_registers(ppu);
+    }
+    // Render
+       if (render_range)
     {
 
         if (rendering_enabled)
@@ -303,10 +309,7 @@ void ppu_clock(Ppu *ppu)
         }
     }
 
-    if (rendering_enabled && (ppu->scan_line < 240 || ppu->scan_line == 261) && shift_range)
-    {
-        shift_registers(ppu);
-    }
+
 
     // Fetch
     if (rendering_enabled && fetch_range)
@@ -319,18 +322,19 @@ void ppu_clock(Ppu *ppu)
         load_shift_registers(ppu);
     }
 
+ 
     if (rendering_enabled && ppu->scan_line == 261 && ppu->dot >= 280 && ppu->dot <= 304)
     {
         copy_vertical_bits(ppu);
     }
 
-    if (rendering_enabled && ppu->dot == 256)
+    if (rendering_enabled && render_line && ppu->dot == 256)
     {
 
         y_increment(ppu);
     }
 
-    if (rendering_enabled && ppu->dot == 257)
+    if (rendering_enabled && render_line && ppu->dot == 257)
     {
 
         copy_horizontal_bits(ppu);

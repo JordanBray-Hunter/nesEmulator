@@ -93,7 +93,7 @@ bool cartridge_load(Cartridge *cartridge, const char *rom_name)
     uint8_t upper_map = headers[3] & FLAGS7_MAPPER_HIGH_MASK;
     cartridge->mapper_value = upper_map | (lower_mapper >> 4);
 
-    cartridge->is_vertical = ((headers[2] & FLAGS6_MIRRORING_BIT) == 0);
+    cartridge->is_vertical = ((headers[2] & FLAGS6_MIRRORING_BIT) != 0);
 
     // Load program rom data and character rom data
 
